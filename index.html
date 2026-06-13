@@ -91,8 +91,22 @@
   /* SHEET */
   .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s;}
   .sheet-backdrop.open{opacity:1;pointer-events:all;}
-  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:201;background:#fff;border-radius:24px 24px 0 0;padding:0 20px calc(20px + var(--safe-bottom));max-height:92vh;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .2s ease;}
-  .sheet.open{opacity:1;pointer-events:all;}
+  /* SHEET - iOS compatible, no transform */
+  .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .sheet-backdrop.open{opacity:1;pointer-events:all;}
+  .sheet{
+    position:fixed;left:0;right:0;bottom:0;z-index:201;
+    background:#fff;border-radius:24px 24px 0 0;
+    padding:0 20px calc(20px + var(--safe-bottom));
+    max-height:90vh;overflow-y:auto;
+    visibility:hidden;opacity:0;
+    bottom:-100%;
+    transition:bottom .25s ease, opacity .25s ease, visibility .25s;
+  }
+  .sheet.open{
+    visibility:visible;opacity:1;
+    bottom:0;
+  }
   .sheet-handle{width:36px;height:4px;border-radius:2px;background:var(--border);margin:12px auto 18px;}
   .sheet-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:16px;}
   .field-label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;margin-top:14px;text-transform:uppercase;letter-spacing:.3px;}
@@ -428,8 +442,11 @@ window.openSheet=()=>{
   activeSheet=document.getElementById(sid);
   document.getElementById('sheetBackdrop').classList.add('open');
   activeSheet.classList.add('open');
-  const realInput=activeSheet.querySelector('input:not([type="date"]):not([type="time"])');
-  if(realInput) realInput.focus();
+  // iOS: needs 300ms after visibility change before focus works
+  setTimeout(()=>{
+    const inp=activeSheet.querySelector('input:not([type="date"]):not([type="time"])');
+    if(inp){inp.focus();}
+  },300);
 };
 window.closeSheet=()=>{
   document.getElementById('sheetBackdrop').classList.remove('open');
@@ -620,7 +637,7 @@ window.calDayTap=d=>{
   activeSheet=document.getElementById('calSheet');
   document.getElementById('sheetBackdrop').classList.add('open');
   activeSheet.classList.add('open');
-  document.getElementById('evTitle').focus();
+  setTimeout(()=>document.getElementById('evTitle').focus(),300);
 };
 window.editEvent=(id)=>{
   const e=events.find(x=>x.id===id);if(!e)return;
