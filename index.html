@@ -91,8 +91,8 @@
   /* SHEET */
   .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s;}
   .sheet-backdrop.open{opacity:1;pointer-events:all;}
-  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:201;background:#fff;border-radius:24px 24px 0 0;padding:0 20px calc(20px + var(--safe-bottom));transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:92vh;overflow-y:auto;}
-  .sheet.open{transform:translateY(0);}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:201;background:#fff;border-radius:24px 24px 0 0;padding:0 20px calc(20px + var(--safe-bottom));max-height:92vh;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .2s ease;}
+  .sheet.open{opacity:1;pointer-events:all;}
   .sheet-handle{width:36px;height:4px;border-radius:2px;background:var(--border);margin:12px auto 18px;}
   .sheet-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:16px;}
   .field-label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;margin-top:14px;text-transform:uppercase;letter-spacing:.3px;}
@@ -210,6 +210,13 @@
   <div style="font-size:13px;font-weight:600;flex:1">📲 הוסף למסך הבית!</div>
   <button class="install-btn" onclick="installPWA()">התקן</button>
   <button onclick="document.getElementById('installBanner').classList.remove('show')" style="background:none;border:none;color:#fff;font-size:22px;line-height:1;padding:0">×</button>
+</div>
+
+<!-- NOTIFICATION BANNER -->
+<div id="notifBanner" style="display:none;position:fixed;top:calc(var(--header-h) + var(--safe-top) + 8px);left:12px;right:12px;z-index:150;background:#4A7C6F;color:#fff;border-radius:16px;padding:12px 16px;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(74,124,111,.35);">
+  <div style="font-size:13px;font-weight:600;flex:1">🔔 אפשר התראות כדי לקבל עדכונים!</div>
+  <button onclick="requestNotifPermission()" style="background:#fff;color:#4A7C6F;border:none;border-radius:10px;padding:8px 14px;font-weight:700;font-size:13px;font-family:inherit;flex-shrink:0">אפשר</button>
+  <button onclick="document.getElementById('notifBanner').style.display='none'" style="background:none;border:none;color:#fff;font-size:22px;line-height:1;padding:0">×</button>
 </div>
 
 <!-- CONTENT -->
@@ -421,18 +428,8 @@ window.openSheet=()=>{
   activeSheet=document.getElementById(sid);
   document.getElementById('sheetBackdrop').classList.add('open');
   activeSheet.classList.add('open');
-  // iOS keyboard fix: create temporary input, focus it, then move focus to real input
   const realInput=activeSheet.querySelector('input:not([type="date"]):not([type="time"])');
-  if(realInput){
-    const tmp=document.createElement('input');
-    tmp.style.cssText='position:fixed;top:50%;left:50%;opacity:0;width:1px;height:1px;font-size:16px;';
-    document.body.appendChild(tmp);
-    tmp.focus();
-    setTimeout(()=>{
-      realInput.focus();
-      tmp.remove();
-    },100);
-  }
+  if(realInput) realInput.focus();
 };
 window.closeSheet=()=>{
   document.getElementById('sheetBackdrop').classList.remove('open');
@@ -673,6 +670,18 @@ window.saveEvent=async()=>{
 };
 
 // ── PUSH NOTIFICATIONS ────────────────────────────────────────
+window.requestNotifPermission = async () => {
+  if(!('Notification' in window)) return;
+  const permission = await Notification.requestPermission();
+  document.getElementById('notifBanner').style.display='none';
+  if(permission === 'granted'){
+    toast('🔔 התראות אופשרו!');
+    await initPushNotifications();
+  } else {
+    toast('❌ התראות לא אופשרו');
+  }
+};
+
 async function initPushNotifications(){
   if(!('Notification' in window)||!('serviceWorker' in navigator))return;
 
@@ -771,6 +780,12 @@ async function init(){
   await loadNames();updateNamesUI();initListeners();
   await initPushNotifications();
   listenForPushMessages();
+  // Show notification banner if not yet granted
+  if('Notification' in window && Notification.permission === 'default'){
+    setTimeout(()=>{
+      document.getElementById('notifBanner').style.display='flex';
+    }, 2000);
+  }
   setTimeout(()=>{document.getElementById('loader').style.display='none';},1500);
   setTimeout(checkTodayNotifications,3000);
 }
