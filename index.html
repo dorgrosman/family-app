@@ -290,9 +290,12 @@
 <!-- TASK SHEET (add/edit) -->
 <div class="sheet" id="taskSheet">
   <div class="sheet-handle"></div>
-  <div class="sheet-title" id="taskSheetTitle">משימה חדשה ✅</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <button onclick="closeSheet()" style="background:none;border:none;font-size:26px;color:var(--muted);padding:0;line-height:1">×</button>
+    <div class="sheet-title" id="taskSheetTitle" style="margin:0">משימה חדשה ✅</div>
+  </div>
   <div class="field-label">מה צריך לעשות?</div>
-  <input class="input-field" id="taskTitle" placeholder="תאר את המשימה...">
+  <input class="input-field" id="taskTitle" placeholder="לחץ כאן להקלדה..." onclick="this.focus()">
   <div class="form-row" style="margin-top:14px">
     <div><div class="field-label">מיועד ל</div><select class="select-field" id="taskAssignee"></select></div>
     <div><div class="field-label">עדיפות</div>
@@ -312,9 +315,12 @@
 <!-- SHOP SHEET -->
 <div class="sheet" id="shopSheet">
   <div class="sheet-handle"></div>
-  <div class="sheet-title">פריט חדש 🛒</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <button onclick="closeSheet()" style="background:none;border:none;font-size:26px;color:var(--muted);padding:0;line-height:1">×</button>
+    <div class="sheet-title" style="margin:0">פריט חדש 🛒</div>
+  </div>
   <div class="field-label">מה לקנות?</div>
-  <input class="input-field" id="shopName" placeholder="שם המוצר...">
+  <input class="input-field" id="shopName" placeholder="לחץ כאן להקלדה..." onclick="this.focus()">
   <div class="field-label">קטגוריה</div>
   <select class="select-field" id="shopCat">
     <option>🥦 ירקות ופירות</option><option>🥛 מוצרי חלב</option>
@@ -330,9 +336,12 @@
 <!-- CALENDAR SHEET (add/edit) -->
 <div class="sheet" id="calSheet">
   <div class="sheet-handle"></div>
-  <div class="sheet-title" id="calSheetTitle">אירוע חדש 📅</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <button onclick="closeSheet()" style="background:none;border:none;font-size:26px;color:var(--muted);padding:0;line-height:1">×</button>
+    <div class="sheet-title" id="calSheetTitle" style="margin:0">אירוע חדש 📅</div>
+  </div>
   <div class="field-label">שם האירוע</div>
-  <input class="input-field" id="evTitle" placeholder="מה קורה?">
+  <input class="input-field" id="evTitle" placeholder="לחץ כאן להקלדה..." onclick="this.focus()">
   <div class="form-row" style="margin-top:14px">
     <div><div class="field-label">של מי?</div><select class="select-field" id="evOwner"></select></div>
     <div><div class="field-label">שעה</div><input class="input-field" type="time" id="evTime"></div>
@@ -442,11 +451,7 @@ window.openSheet=()=>{
   activeSheet=document.getElementById(sid);
   document.getElementById('sheetBackdrop').classList.add('open');
   activeSheet.classList.add('open');
-  // iOS: needs 300ms after visibility change before focus works
-  setTimeout(()=>{
-    const inp=activeSheet.querySelector('input:not([type="date"]):not([type="time"])');
-    if(inp){inp.focus();}
-  },300);
+  // No auto-focus — user taps the field directly (iOS requirement)
 };
 window.closeSheet=()=>{
   document.getElementById('sheetBackdrop').classList.remove('open');
