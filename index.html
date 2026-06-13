@@ -263,7 +263,7 @@
   </button>
 </nav>
 
-<button class="fab" id="fab" onclick="openSheet()">+</button>
+<button type="button" class="fab" id="fab" onclick="openSheet()">+</button>
 <div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSheet()"></div>
 
 <!-- TASK SHEET (add/edit) -->
@@ -333,10 +333,13 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore,collection,onSnapshot,addDoc,updateDoc,deleteDoc,doc,setDoc,getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 const firebaseConfig={apiKey:"AIzaSyAXWgxjh4jH9Bd9zaQu0LPJwprEMfm4OFI",authDomain:"family-app-45d82.firebaseapp.com",projectId:"family-app-45d82",storageBucket:"family-app-45d82.firebasestorage.app",messagingSenderId:"811925409475",appId:"1:811925409475:web:d3b49f8908c1f582899c76"};
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
+const messaging=getMessaging(app);
+const VAPID_KEY='BKaSeLCUfR7cpLxudfZ3DSSJSndRMkZLRbpZX48yIqO0cctvUgvKccu1PgX9KJ0uDHSSAXB6y-O0aIFz2bCsR0k';
 
 let myName='אני',partnerName='פרטנר';
 let taskFilter='all',calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
@@ -418,7 +421,8 @@ window.openSheet=()=>{
   activeSheet=document.getElementById(sid);
   document.getElementById('sheetBackdrop').classList.add('open');
   activeSheet.classList.add('open');
-  setTimeout(()=>{const f=activeSheet.querySelector('input');if(f)f.focus();},350);
+  // iOS fix: focus must be triggered by direct user gesture, not setTimeout
+  const f=activeSheet.querySelector('input');if(f)f.focus();
 };
 window.closeSheet=()=>{
   document.getElementById('sheetBackdrop').classList.remove('open');
@@ -483,9 +487,11 @@ window.saveTask=async()=>{
   if(editingTaskId){
     await updateDoc(doc(db,'tasks',editingTaskId),data);
     closeSheet();toast('✅ משימה עודכנה!');
+    sendPushToOthers('🏠 משימה עודכנה', '✏️ ' + title + ' — מיועד ל' + data.assignee);
   } else {
     await addDoc(collection(db,'tasks'),{...data,done:false,createdAt:Date.now()});
     closeSheet();toast('✅ משימה נוספה!');
+    sendPushToOthers('🏠 משימה חדשה!', '✅ ' + title + ' — מיועד ל' + data.assignee);
   }
 };
 
@@ -607,7 +613,7 @@ window.calDayTap=d=>{
   activeSheet=document.getElementById('calSheet');
   document.getElementById('sheetBackdrop').classList.add('open');
   activeSheet.classList.add('open');
-  setTimeout(()=>document.getElementById('evTitle').focus(),350);
+  document.getElementById('evTitle').focus();
 };
 window.editEvent=(id)=>{
   const e=events.find(x=>x.id===id);if(!e)return;
@@ -648,24 +654,90 @@ window.saveEvent=async()=>{
   if(editingEventId){
     await updateDoc(doc(db,'events',editingEventId),data);
     closeSheet();toast('📅 אירוע עודכן!');
+    sendPushToOthers('📅 אירוע עודכן', '✏️ ' + title + (data.time ? ' בשעה ' + data.time : ''));
   } else {
     await addDoc(collection(db,'events'),{...data,createdAt:Date.now()});
     closeSheet();toast('📅 אירוע נוסף!');
+    sendPushToOthers('📅 אירוע חדש!', data.emoji + ' ' + title + (data.time ? ' בשעה ' + data.time : ''));
   }
 };
 
-// NOTIFICATIONS
-async function requestNotifications(){
-  if(!('Notification'in window))return;
-  if(Notification.permission==='default')await Notification.requestPermission();
+// ── PUSH NOTIFICATIONS ────────────────────────────────────────
+async function initPushNotifications(){
+  if(!('Notification' in window)||!('serviceWorker' in navigator))return;
+
+  // Register service worker
+  try {
+    const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    console.log('SW registered');
+
+    // Request permission
+    const permission = await Notification.requestPermission();
+    if(permission !== 'granted'){ console.log('Notification denied'); return; }
+
+    // Get FCM token
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    if(!token){ console.log('No token'); return; }
+
+    // Save token to Firestore under device ID
+    const deviceId = localStorage.getItem('deviceId') || ('dev_' + Math.random().toString(36).slice(2));
+    localStorage.setItem('deviceId', deviceId);
+    await setDoc(doc(db, 'fcm_tokens', deviceId), {
+      token, updatedAt: Date.now(), userAgent: navigator.userAgent
+    });
+    console.log('FCM token saved:', token.slice(0,20)+'...');
+
+    // Handle foreground messages
+    onMessage(messaging, payload => {
+      const { title, body } = payload.notification || {};
+      if(Notification.permission === 'granted'){
+        new Notification(title || '🏠 הבית שלנו', {
+          body: body || '', icon: '/icon-192.png', dir: 'rtl'
+        });
+      }
+      toast('🔔 ' + (body || title || 'הודעה חדשה'));
+    });
+
+  } catch(e){ console.error('Push init error:', e); }
 }
+
+// Send push to ALL other devices via Firestore trigger
+async function sendPushToOthers(title, body){
+  try {
+    await addDoc(collection(db, 'push_queue'), {
+      title, body, sentAt: Date.now(),
+      fromDevice: localStorage.getItem('deviceId') || 'unknown'
+    });
+  } catch(e){ console.error('Push send error:', e); }
+}
+
+// Listen for push_queue — send local notification if message is from other device
+function listenForPushMessages(){
+  const myDeviceId = localStorage.getItem('deviceId') || '';
+  onSnapshot(collection(db,'push_queue'), snap => {
+    snap.docChanges().forEach(change => {
+      if(change.type !== 'added') return;
+      const d = change.doc.data();
+      // Only show if recent (last 10 seconds) and from another device
+      if(d.fromDevice === myDeviceId) return;
+      if(Date.now() - (d.sentAt||0) > 10000) return;
+      if(Notification.permission === 'granted'){
+        new Notification(d.title || '🏠 הבית שלנו', {
+          body: d.body || '', icon: '/icon-192.png', dir: 'rtl', lang: 'he'
+        });
+      }
+      toast('🔔 ' + (d.body || d.title || ''));
+    });
+  });
+}
+
 function checkTodayNotifications(){
   if(Notification.permission!=='granted')return;
   const todayStr=new Date().toISOString().slice(0,10);
   const todayTasks=tasks.filter(t=>t.dueDate===todayStr&&!t.done);
   const todayEvents=events.filter(e=>{const from=e.dateFrom||e.date||'';const to=e.dateTo||from;return todayStr>=from&&todayStr<=to;});
-  if(todayTasks.length)new Notification('🏠 משימות להיום',{body:todayTasks.map(t=>'• '+t.title).join('\n'),icon:'icon-192.png'});
-  if(todayEvents.length)new Notification('📅 אירועים היום',{body:todayEvents.map(e=>e.emoji+' '+e.title+(e.time?' בשעה '+e.time:'')).join('\n'),icon:'icon-192.png'});
+  if(todayTasks.length)new Notification('🏠 משימות להיום',{body:todayTasks.map(t=>'• '+t.title).join('\n'),icon:'icon-192.png',dir:'rtl'});
+  if(todayEvents.length)new Notification('📅 אירועים היום',{body:todayEvents.map(e=>e.emoji+' '+e.title+(e.time?' בשעה '+e.time:'')).join('\n'),icon:'icon-192.png',dir:'rtl'});
 }
 
 // PWA
@@ -687,7 +759,8 @@ function initListeners(){
 
 async function init(){
   await loadNames();updateNamesUI();initListeners();
-  await requestNotifications();
+  await initPushNotifications();
+  listenForPushMessages();
   setTimeout(()=>{document.getElementById('loader').style.display='none';},1500);
   setTimeout(checkTodayNotifications,3000);
 }
