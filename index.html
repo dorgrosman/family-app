@@ -430,6 +430,33 @@ window.switchTab=(name,btn)=>{
 window.openSheet=()=>{
   editingTaskId=null;editingEventId=null;
   const sid=currentTab==='tasks'?'taskSheet':currentTab==='shopping'?'shopSheet':'calSheet';
+
+  // iOS PWA keyboard fix: use native prompt for text input
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+  if(isIOS && currentTab==='tasks'){
+    const title=prompt('מה צריך לעשות?');
+    if(!title||!title.trim())return;
+    // Open sheet with pre-filled title
+    document.getElementById('taskSheetTitle').textContent='משימה חדשה ✅';
+    document.getElementById('taskTitle').value=title.trim();
+    document.getElementById('taskDue').value='';
+    document.getElementById('taskSubmitBtn').textContent='הוסף משימה';
+    document.getElementById('taskDeleteBtn').style.display='none';
+    activeSheet=document.getElementById('taskSheet');
+    document.getElementById('sheetBackdrop').classList.add('open');
+    activeSheet.classList.add('open');
+    return;
+  }
+  if(isIOS && currentTab==='shopping'){
+    const name=prompt('מה לקנות?');
+    if(!name||!name.trim())return;
+    document.getElementById('shopName').value=name.trim();
+    activeSheet=document.getElementById('shopSheet');
+    document.getElementById('sheetBackdrop').classList.add('open');
+    activeSheet.classList.add('open');
+    return;
+  }
+
   if(currentTab==='tasks'){
     document.getElementById('taskSheetTitle').textContent='משימה חדשה ✅';
     document.getElementById('taskTitle').value='';
@@ -451,7 +478,6 @@ window.openSheet=()=>{
   activeSheet=document.getElementById(sid);
   document.getElementById('sheetBackdrop').classList.add('open');
   activeSheet.classList.add('open');
-  // No auto-focus — user taps the field directly (iOS requirement)
 };
 window.closeSheet=()=>{
   document.getElementById('sheetBackdrop').classList.remove('open');
