@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="הבית שלנו">
+<meta name="theme-color" content="#7C3D6E">
+<meta name="description" content="האפליקציה של המשפחה שלנו">
+<link rel="manifest" href="manifest.json">
+<title>הבית שלנו 💑</title>
+<style>
+  :root {
+    --bg: #FDF6F0; --card: #FFFFFF; --plum: #7C3D6E; --plum-light: #F3E8F0;
+    --sage: #4A7C6F; --sage-light: #E8F3F0; --rose: #E8736A; --rose-light: #FDF0EE;
+    --text: #2D1F2A; --muted: #9A8A96; --border: #EDE0E8; --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Arial Hebrew', Arial, sans-serif;
+    background: var(--bg); color: var(--text); direction: rtl;
+    min-height: 100vh; padding-bottom: 80px;
+  }
+  button { cursor: pointer; font-family: inherit; }
+  input, select { font-family: inherit; direction: rtl; }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, var(--plum) 0%, #a0527a 100%);
+    padding: 32px 20px 20px; border-radius: 0 0 28px 28px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .header-names { font-size: 20px; font-weight: 800; color: #fff; }
+  .header-eyebrow { font-size: 11px; color: rgba(255,255,255,.65); margin-bottom: 2px; }
+  .header-right { display: flex; gap: 8px; align-items: center; }
+  .sync-badge {
+    font-size: 11px; padding: 4px 10px; border-radius: 20px;
+    background: rgba(255,255,255,.2); color: #fff; font-weight: 600;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #4CAF50; }
+  .sync-dot.offline { background: #FF9800; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .edit-btn {
+    background: rgba(255,255,255,.2); border: none; border-radius: 8px;
+    padding: 5px 10px; color: #fff; font-size: 11px; font-weight: 600;
+  }
+  .name-inputs { display: flex; gap: 8px; margin-top: 12px; }
+  .name-input {
+    flex: 1; padding: 8px 12px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.2);
+    color: #fff; font-size: 13px; outline: none;
+  }
+  .name-input::placeholder { color: rgba(255,255,255,.6); }
+
+  /* TABS */
+  .tab-wrap { padding: 0 16px; margin-top: 16px; }
+  .tab-bar {
+    display: flex; border-radius: 16px; background: var(--plum-light);
+    padding: 4px; margin-bottom: 20px;
+  }
+  .tab-btn {
+    flex: 1; border: none; border-radius: 13px; padding: 10px 4px;
+    background: transparent; color: var(--plum); font-weight: 600; font-size: 13px;
+    transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .tab-btn.active { background: var(--plum); color: #fff; font-weight: 700; box-shadow: 0 2px 8px rgba(124,61,110,.35); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* FORM ELEMENTS */
+  .input-field {
+    width: 100%; padding: 11px 13px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: #fff;
+    font-size: 14px; color: var(--text); outline: none; transition: border-color .2s;
+  }
+  .input-field:focus { border-color: var(--plum); }
+  .select-field {
+    padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--border);
+    background: #fff; font-size: 13px; color: var(--text); outline: none; appearance: none;
+  }
+  .btn-primary {
+    flex: 1; padding: 11px 18px; border-radius: 11px; border: none;
+    background: var(--plum); color: #fff; font-weight: 700; font-size: 14px; transition: opacity .2s;
+  }
+  .btn-primary:hover { opacity: .9; }
+  .btn-ghost {
+    flex: 1; padding: 11px 18px; border-radius: 11px;
+    border: 1.5px solid var(--plum); background: transparent;
+    color: var(--plum); font-weight: 600; font-size: 14px;
+  }
+  .btn-add {
+    width: 100%; padding: 11px; border-radius: 11px; border: 2px dashed var(--plum);
+    background: transparent; color: var(--plum); font-weight: 700; font-size: 14px; margin-top: 14px;
+  }
+  .btn-add:hover { background: var(--plum-light); }
+  .form-box { border-radius: 16px; padding: 16px; margin-top: 12px; }
+  .form-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .del-btn { background: none; border: none; color: var(--muted); font-size: 18px; padding: 0 2px; }
+  .del-btn:hover { color: var(--rose); }
+
+  /* TASKS */
+  .filter-pills { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .pill { padding: 6px 14px; border-radius: 20px; border: none; background: var(--plum-light); color: var(--plum); font-weight: 600; font-size: 12px; transition: all .2s; }
+  .pill.active { background: var(--plum); color: #fff; }
+  .task-card {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius);
+    padding: 13px 14px; display: flex; align-items: flex-start; gap: 12px;
+    margin-bottom: 10px; transition: opacity .2s;
+  }
+  .task-card.done { opacity: .55; background: #F7F7F7; }
+  .check-circle {
+    width: 23px; height: 23px; border-radius: 50%; border: 2px solid var(--plum);
+    background: transparent; flex-shrink: 0; margin-top: 1px; color: #fff; font-size: 12px;
+    display: flex; align-items: center; justify-content: center; transition: all .2s;
+  }
+  .check-circle.checked { background: var(--plum); }
+  .task-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .task-card.done .task-title { text-decoration: line-through; }
+  .task-meta { display: flex; gap: 8px; margin-top: 5px; flex-wrap: wrap; align-items: center; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 8px; font-weight: 700; }
+  .badge-high { background: #fde8e7; color: var(--rose); }
+  .badge-med { background: var(--plum-light); color: var(--plum); }
+  .badge-low { background: var(--sage-light); color: var(--sage); }
+  .meta-tag { font-size: 11px; color: var(--muted); }
+  .empty-state { text-align: center; color: var(--muted); padding: 36px 0; font-size: 14px; }
+
+  /* SHOPPING */
+  .shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .shop-count { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .cat-header {
+    width: 100%; background: var(--sage-light); border: none; border-radius: 10px;
+    padding: 9px 13px; display: flex; justify-content: space-between; align-items: center;
+    font-weight: 700; color: var(--sage); font-size: 13px; margin-bottom: 4px;
+  }
+  .shop-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 13px;
+    background: var(--card); border-radius: 10px; margin-bottom: 4px;
+    border: 1px solid var(--border); transition: opacity .2s;
+  }
+  .shop-item.done { opacity: .5; background: #F7F7F7; }
+  .shop-name { flex: 1; font-size: 14px; font-weight: 500; color: var(--text); }
+  .shop-item.done .shop-name { text-decoration: line-through; }
+  .check-sq {
+    width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--sage);
+    background: transparent; flex-shrink: 0; color: #fff; font-size: 12px;
+    display: flex; align-items: center; justify-content: center; transition: all .2s;
+  }
+  .check-sq.checked { background: var(--sage); border-color: var(--sage); }
+  .cat-group { margin-bottom: 12px; }
+
+  /* CALENDAR */
+  .cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .cal-nav-btn { background: none; border: none; font-size: 24px; color: var(--plum); font-weight: 700; padding: 0 10px; }
+  .cal-month { font-size: 17px; font-weight: 700; color: var(--plum); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+  .cal-day-name { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); padding: 4px 0; }
+  .cal-cell {
+    border-radius: 9px; padding: 6px 2px; text-align: center; cursor: pointer;
+    min-height: 44px; border: 2px solid transparent; transition: background .15s;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  }
+  .cal-cell:hover { background: var(--plum-light); }
+  .cal-cell.today { background: var(--plum); color: #fff; }
+  .cal-cell.selected:not(.today) { border-color: var(--plum); background: var(--plum-light); }
+  .cal-num { font-size: 13px; }
+  .cal-dots { display: flex; justify-content: center; gap: 2px; flex-wrap: wrap; margin-top: 2px; }
+  .cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+  .cal-cell.today .cal-dot { background: rgba(255,255,255,.8) !important; }
+  .upcoming-title { font-size: 13px; font-weight: 700; color: var(--plum); margin: 18px 0 10px; }
+  .event-card {
+    display: flex; align-items: center; gap: 12px; background: var(--card);
+    border: 1.5px solid var(--border); border-radius: 13px; padding: 11px 13px; margin-bottom: 8px;
+  }
+  .event-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .event-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .event-date { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .emoji-picker { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; }
+  .emoji-btn { font-size: 18px; padding: 5px 7px; border-radius: 8px; border: none; background: transparent; }
+  .emoji-btn:hover, .emoji-btn.active { background: var(--plum-light); }
+  .color-picker { display: flex; gap: 8px; margin-top: 10px; }
+  .color-swatch { width: 24px; height: 24px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform .15s; }
+  .color-swatch.active { border-color: var(--text); transform: scale(1.2); }
+
+  /* LOADER */
+  .loader-overlay {
+    position: fixed; inset: 0; background: rgba(253,246,240,.92);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999;
+  }
+  .loader-spinner {
+    width: 48px; height: 48px; border: 4px solid var(--plum-light);
+    border-top-color: var(--plum); border-radius: 50%; animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-text { margin-top: 14px; color: var(--plum); font-weight: 700; font-size: 15px; }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--text); color: #fff; padding: 10px 20px; border-radius: 24px;
+    font-size: 13px; font-weight: 600; opacity: 0; transition: all .3s;
+    pointer-events: none; z-index: 999; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* PWA INSTALL */
+  #installBanner {
+    display: none; position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--plum); color: #fff; padding: 14px 20px;
+    flex-direction: row; align-items: center; justify-content: space-between;
+    z-index: 200; gap: 12px;
+  }
+  #installBanner.show { display: flex; }
+  .install-text { font-size: 13px; font-weight: 600; }
+  .install-btn { background: #fff; color: var(--plum); border: none; border-radius: 10px; padding: 8px 16px; font-weight: 700; font-size: 13px; font-family: inherit; }
+
+  @media (max-width: 480px) {
+    .header { padding-top: calc(32px + env(safe-area-inset-top)); }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div class="loader-overlay" id="loader">
+  <div class="loader-spinner"></div>
+  <div class="loader-text">מתחבר לענן... ☁️</div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="header-right">
+      <div class="sync-badge">
+        <div class="sync-dot" id="syncDot"></div>
+        <span id="syncLabel">מחובר</span>
+      </div>
+      <button class="edit-btn" onclick="toggleEditNames()">✏️</button>
+    </div>
+    <div style="text-align:right">
+      <div class="header-eyebrow">הבית של</div>
+      <div class="header-names" id="headerNames">טוען... 💑</div>
+    </div>
+  </div>
+  <div class="name-inputs" id="nameInputs" style="display:none">
+    <input class="name-input" id="myNameInput" placeholder="השם שלי" oninput="saveNames()">
+    <input class="name-input" id="partnerNameInput" placeholder="שם הפרטנר" oninput="saveNames()">
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tab-wrap">
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('tasks',this)"><span>✅</span> משימות</button>
+    <button class="tab-btn" onclick="switchTab('shopping',this)"><span>🛒</span> קניות</button>
+    <button class="tab-btn" onclick="switchTab('calendar',this)"><span>📅</span> לוח שנה</button>
+  </div>
+
+  <!-- TASKS -->
+  <div id="tab-tasks" class="tab-panel active">
+    <div class="filter-pills">
+      <button class="pill active" onclick="setTaskFilter('all',this)">הכל</button>
+      <button class="pill" id="mineFilterBtn" onclick="setTaskFilter('mine',this)">שלי</button>
+      <button class="pill" id="partnerFilterBtn" onclick="setTaskFilter('partner',this)">פרטנר</button>
+      <button class="pill" onclick="setTaskFilter('pending',this)">ממתין</button>
+    </div>
+    <div id="taskList"></div>
+    <div id="taskAddForm" class="form-box" style="display:none;background:var(--plum-light)">
+      <input class="input-field" id="taskTitle" placeholder="מה צריך לעשות?" onkeydown="if(event.key==='Enter')saveTask()">
+      <div class="form-row">
+        <select class="select-field" id="taskAssignee" style="flex:1"></select>
+        <select class="select-field" id="taskPriority" style="flex:1">
+          <option value="גבוה">גבוה 🔴</option>
+          <option value="בינוני" selected>בינוני 🟡</option>
+          <option value="נמוך">נמוך 🟢</option>
+        </select>
+      </div>
+      <input class="input-field" type="date" id="taskDue" style="margin-top:8px">
+      <div class="form-row">
+        <button class="btn-primary" onclick="saveTask()">הוסף</button>
+        <button class="btn-ghost" onclick="closeTaskForm()">ביטול</button>
+      </div>
+    </div>
+    <button class="btn-add" onclick="openTaskForm()">+ משימה חדשה</button>
+  </div>
+
+  <!-- SHOPPING -->
+  <div id="tab-shopping" class="tab-panel">
+    <div class="shop-header">
+      <button class="btn-ghost" id="clearDoneBtn" style="font-size:12px;padding:6px 12px;display:none" onclick="clearDoneShopping()">נקה שנרכש ✓</button>
+      <span class="shop-count" id="shopCount">0 פריטים נותרו</span>
+    </div>
+    <div id="shopList"></div>
+    <div id="shopAddForm" class="form-box" style="display:none;background:var(--sage-light)">
+      <input class="input-field" id="shopName" placeholder="מה לקנות?" onkeydown="if(event.key==='Enter')saveShopItem()">
+      <select class="select-field" id="shopCat" style="width:100%;margin-top:8px">
+        <option>🥦 ירקות ופירות</option><option>🥛 מוצרי חלב</option>
+        <option>🍗 בשר ודגים</option><option>🥫 יבשים ושימורים</option>
+        <option>🧴 ניקיון ובית</option><option>🍫 חטיפים וממתקים</option>
+        <option>🥖 לחם ומאפים</option><option>אחר</option>
+      </select>
+      <select class="select-field" id="shopBy" style="width:100%;margin-top:8px"></select>
+      <div class="form-row">
+        <button class="btn-primary" style="background:var(--sage)" onclick="saveShopItem()">הוסף</button>
+        <button class="btn-ghost" style="border-color:var(--sage);color:var(--sage)" onclick="closeShopForm()">ביטול</button>
+      </div>
+    </div>
+    <button class="btn-add" style="border-color:var(--sage);color:var(--sage)" onclick="openShopForm()">+ פריט חדש</button>
+  </div>
+
+  <!-- CALENDAR -->
+  <div id="tab-calendar" class="tab-panel">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="calNav(1)">›</button>
+      <span class="cal-month" id="calMonthLabel"></span>
+      <button class="cal-nav-btn" onclick="calNav(-1)">‹</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="upcoming-title">📌 אירועים קרובים</div>
+    <div id="upcomingList"></div>
+    <div id="calAddForm" class="form-box" style="display:none;background:var(--plum-light)">
+      <div style="font-size:13px;font-weight:700;color:var(--plum);margin-bottom:10px" id="calFormTitle"></div>
+      <input class="input-field" id="evTitle" placeholder="שם האירוע" onkeydown="if(event.key==='Enter')saveEvent()">
+      <input class="input-field" type="time" id="evTime" style="margin-top:8px">
+      <div class="emoji-picker" id="emojiPicker"></div>
+      <div class="color-picker" id="colorPicker"></div>
+      <div class="form-row">
+        <button class="btn-primary" onclick="saveEvent()">הוסף אירוע</button>
+        <button class="btn-ghost" onclick="closeCalForm()">ביטול</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PWA Install Banner -->
+<div id="installBanner">
+  <div class="install-text">📲 הוסף למסך הבית לחווית אפליקציה מלאה!</div>
+  <button class="install-btn" onclick="installPWA()">התקן</button>
+  <button onclick="document.getElementById('installBanner').classList.remove('show')" style="background:none;border:none;color:#fff;font-size:20px;padding:0">×</button>
+</div>
+
+<div id="toast"></div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc, getDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAXWgxjh4jH9Bd9zaQu0LPJwprEMfm4OFI",
+  authDomain: "family-app-45d82.firebaseapp.com",
+  projectId: "family-app-45d82",
+  storageBucket: "family-app-45d82.firebasestorage.app",
+  messagingSenderId: "811925409475",
+  appId: "1:811925409475:web:d3b49f8908c1f582899c76"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ── GLOBALS ──────────────────────────────────────────────────
+let myName = 'אני', partnerName = 'פרטנר';
+let taskFilter = 'all';
+let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
+let selectedCalDay = null, selectedEmoji = '🗓️', selectedColor = '#7C3D6E';
+let tasks = [], shopping = [], events = [];
+let deferredInstallPrompt = null;
+
+const HEB_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const HEB_DAYS = ['א','ב','ג','ד','ה','ו','ש'];
+const EMOJIS = ['🗓️','🍷','🎂','🏕️','👨‍👩‍👧','🎬','🏋️','✈️','🎁','💊','🐾','🌿','🎵','☕','🍕'];
+const EVENT_COLORS = ['#7C3D6E','#E8736A','#4A7C6F','#5B8ACE','#E8A030','#9B59B6'];
+const SHOP_CATS = ['🥦 ירקות ופירות','🥛 מוצרי חלב','🍗 בשר ודגים','🥫 יבשים ושימורים','🧴 ניקיון ובית','🍫 חטיפים וממתקים','🥖 לחם ומאפים','אחר'];
+
+function pad(n) { return String(n).padStart(2,'0'); }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+function setSyncStatus(online) {
+  document.getElementById('syncDot').className = 'sync-dot' + (online ? '' : ' offline');
+  document.getElementById('syncLabel').textContent = online ? 'מסונכרן' : 'מתחבר...';
+}
+
+// ── NAMES ────────────────────────────────────────────────────
+async function loadNames() {
+  const snap = await getDoc(doc(db, 'settings', 'names'));
+  if (snap.exists()) {
+    const d = snap.data();
+    myName = d.myName || 'אני';
+    partnerName = d.partnerName || 'פרטנר';
+  }
+  document.getElementById('myNameInput').value = myName;
+  document.getElementById('partnerNameInput').value = partnerName;
+  updateNamesUI();
+}
+async function saveNames() {
+  myName = document.getElementById('myNameInput').value || 'אני';
+  partnerName = document.getElementById('partnerNameInput').value || 'פרטנר';
+  await setDoc(doc(db, 'settings', 'names'), { myName, partnerName });
+  updateNamesUI();
+}
+function updateNamesUI() {
+  document.getElementById('headerNames').textContent = myName + ' & ' + partnerName + ' 💑';
+  document.getElementById('mineFilterBtn').textContent = myName;
+  document.getElementById('partnerFilterBtn').textContent = partnerName;
+  ['taskAssignee','shopBy'].forEach(id => {
+    const s = document.getElementById(id); if (!s) return;
+    s.innerHTML = `<option>${myName}</option><option>${partnerName}</option>`;
+    if (id === 'taskAssignee') s.innerHTML += '<option>שנינו</option>';
+  });
+}
+window.toggleEditNames = () => {
+  const el = document.getElementById('nameInputs');
+  el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+};
+window.saveNames = saveNames;
+
+// ── TAB ──────────────────────────────────────────────────────
+window.switchTab = (name, btn) => {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+};
+
+// ── TASKS ────────────────────────────────────────────────────
+function renderTasks() {
+  let filtered = tasks;
+  if (taskFilter === 'mine') filtered = tasks.filter(t => t.assignee === myName || t.assignee === 'אני');
+  else if (taskFilter === 'partner') filtered = tasks.filter(t => t.assignee === partnerName || t.assignee === 'פרטנר');
+  else if (taskFilter === 'pending') filtered = tasks.filter(t => !t.done);
+  const list = document.getElementById('taskList');
+  if (!filtered.length) { list.innerHTML = '<div class="empty-state">אין משימות כאן 🎉</div>'; return; }
+  list.innerHTML = filtered.map(t => `
+    <div class="task-card ${t.done?'done':''}">
+      <button class="check-circle ${t.done?'checked':''}" onclick="toggleTask('${t.id}',${!t.done})">${t.done?'✓':''}</button>
+      <div style="flex:1;min-width:0">
+        <div class="task-title">${t.title}</div>
+        <div class="task-meta">
+          <span class="badge badge-${t.priority==='גבוה'?'high':t.priority==='בינוני'?'med':'low'}">${t.priority}</span>
+          <span class="meta-tag">👤 ${t.assignee}</span>
+          ${t.dueDate?`<span class="meta-tag">📅 ${t.dueDate}</span>`:''}
+        </div>
+      </div>
+      <button class="del-btn" onclick="deleteTask('${t.id}')">×</button>
+    </div>`).join('');
+}
+window.toggleTask = async (id, done) => {
+  await updateDoc(doc(db,'tasks',id), { done });
+};
+window.deleteTask = async (id) => { await deleteDoc(doc(db,'tasks',id)); };
+window.setTaskFilter = (f, btn) => {
+  taskFilter = f;
+  document.querySelectorAll('.filter-pills .pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active'); renderTasks();
+};
+window.openTaskForm = () => { document.getElementById('taskAddForm').style.display='block'; document.getElementById('taskTitle').focus(); };
+window.closeTaskForm = () => { document.getElementById('taskAddForm').style.display='none'; document.getElementById('taskTitle').value=''; };
+window.saveTask = async () => {
+  const title = document.getElementById('taskTitle').value.trim();
+  if (!title) return;
+  await addDoc(collection(db,'tasks'), {
+    title, assignee: document.getElementById('taskAssignee').value,
+    priority: document.getElementById('taskPriority').value,
+    dueDate: document.getElementById('taskDue').value, done: false,
+    createdAt: Date.now()
+  });
+  window.closeTaskForm(); toast('✅ משימה נוספה!');
+  checkDailyNotifications();
+};
+
+// ── SHOPPING ─────────────────────────────────────────────────
+function renderShopping() {
+  const pending = shopping.filter(i => !i.done).length;
+  document.getElementById('shopCount').textContent = pending + ' פריטים נותרו';
+  document.getElementById('clearDoneBtn').style.display = shopping.some(i=>i.done)?'block':'none';
+  const grouped = {};
+  SHOP_CATS.forEach(c => { const g = shopping.filter(i=>i.category===c); if(g.length) grouped[c]=g; });
+  const list = document.getElementById('shopList');
+  if (!Object.keys(grouped).length) { list.innerHTML = '<div class="empty-state">הרשימה ריקה — קניות נעימות! 🛒</div>'; return; }
+  list.innerHTML = Object.entries(grouped).map(([cat,items]) => `
+    <div class="cat-group">
+      <button class="cat-header" onclick="toggleCat(this)">
+        <span style="font-size:11px;color:var(--muted)">${items.filter(i=>!i.done).length}/${items.length}</span>
+        <span>▼ ${cat}</span>
+      </button>
+      <div class="cat-items">
+        ${items.map(item=>`
+          <div class="shop-item ${item.done?'done':''}">
+            <button class="check-sq ${item.done?'checked':''}" onclick="toggleShop('${item.id}',${!item.done})">${item.done?'✓':''}</button>
+            <span class="shop-name">${item.name}</span>
+            <span class="meta-tag">👤 ${item.addedBy}</span>
+            <button class="del-btn" onclick="deleteShop('${item.id}')">×</button>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+window.toggleCat = btn => {
+  const items = btn.nextElementSibling;
+  items.style.display = items.style.display==='none'?'block':'none';
+};
+window.toggleShop = async (id,done) => { await updateDoc(doc(db,'shopping',id),{done}); };
+window.deleteShop = async (id) => { await deleteDoc(doc(db,'shopping',id)); };
+window.clearDoneShopping = async () => {
+  const done = shopping.filter(i=>i.done);
+  for (const i of done) await deleteDoc(doc(db,'shopping',i.id));
+  toast('🗑️ פריטים שנרכשו נמחקו');
+};
+window.openShopForm = () => { document.getElementById('shopAddForm').style.display='block'; document.getElementById('shopName').focus(); };
+window.closeShopForm = () => { document.getElementById('shopAddForm').style.display='none'; document.getElementById('shopName').value=''; };
+window.saveShopItem = async () => {
+  const name = document.getElementById('shopName').value.trim();
+  if (!name) return;
+  await addDoc(collection(db,'shopping'), {
+    name, category: document.getElementById('shopCat').value,
+    addedBy: document.getElementById('shopBy').value, done: false, createdAt: Date.now()
+  });
+  window.closeShopForm(); toast('🛒 פריט נוסף!');
+};
+
+// ── CALENDAR ─────────────────────────────────────────────────
+function renderCalendar() {
+  document.getElementById('calMonthLabel').textContent = HEB_MONTHS[calMonth]+' '+calYear;
+  const firstDay = new Date(calYear,calMonth,1).getDay();
+  const totalDays = new Date(calYear,calMonth+1,0).getDate();
+  const todayD = new Date();
+  let html = HEB_DAYS.map(d=>`<div class="cal-day-name">${d}</div>`).join('');
+  for(let i=0;i<firstDay;i++) html+='<div></div>';
+  for(let d=1;d<=totalDays;d++){
+    const dateStr=`${calYear}-${pad(calMonth+1)}-${pad(d)}`;
+    const dayEvs=events.filter(e=>e.date===dateStr);
+    const isToday=d===todayD.getDate()&&calMonth===todayD.getMonth()&&calYear===todayD.getFullYear();
+    const isSel=d===selectedCalDay;
+    html+=`<div class="cal-cell ${isToday?'today':''} ${isSel&&!isToday?'selected':''}" onclick="selectCalDay(${d})">
+      <span class="cal-num">${d}</span>
+      <div class="cal-dots">${dayEvs.slice(0,3).map(e=>`<div class="cal-dot" style="background:${e.color}"></div>`).join('')}</div>
+    </div>`;
+  }
+  document.getElementById('calGrid').innerHTML=html;
+  const todayStr=new Date().toISOString().slice(0,10);
+  const upcoming=events.filter(e=>e.date>=todayStr).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
+  const upEl=document.getElementById('upcomingList');
+  if(!upcoming.length){upEl.innerHTML='<div class="empty-state">אין אירועים קרובים</div>';return;}
+  upEl.innerHTML=upcoming.map(e=>`
+    <div class="event-card">
+      <div class="event-icon" style="background:${e.color}22">${e.emoji}</div>
+      <div style="flex:1">
+        <div class="event-title">${e.title}</div>
+        <div class="event-date">${e.date.slice(8,10)}/${e.date.slice(5,7)} ${e.time?'• '+e.time:''}</div>
+      </div>
+      <button class="del-btn" onclick="deleteEvent('${e.id}')">×</button>
+    </div>`).join('');
+}
+window.calNav = dir => {
+  calMonth+=dir;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0){calMonth=11;calYear--;}
+  selectedCalDay=null;
+  document.getElementById('calAddForm').style.display='none';
+  renderCalendar();
+};
+window.selectCalDay = d => {
+  selectedCalDay=d;
+  renderCalendar();
+  document.getElementById('calFormTitle').textContent=`+ אירוע ביום ${d}/${calMonth+1}`;
+  document.getElementById('calAddForm').style.display='block';
+  document.getElementById('evTitle').focus();
+  renderEmojiPicker(); renderColorPicker();
+};
+function renderEmojiPicker(){
+  document.getElementById('emojiPicker').innerHTML=EMOJIS.map(em=>
+    `<button class="emoji-btn ${em===selectedEmoji?'active':''}" onclick="pickEmoji('${em}')">${em}</button>`).join('');
+}
+function renderColorPicker(){
+  document.getElementById('colorPicker').innerHTML=EVENT_COLORS.map(c=>
+    `<div class="color-swatch ${c===selectedColor?'active':''}" style="background:${c}" onclick="pickColor('${c}')"></div>`).join('');
+}
+window.pickEmoji = em => { selectedEmoji=em; renderEmojiPicker(); };
+window.pickColor = c => { selectedColor=c; renderColorPicker(); };
+window.closeCalForm = () => { document.getElementById('calAddForm').style.display='none'; selectedCalDay=null; renderCalendar(); };
+window.saveEvent = async () => {
+  const title=document.getElementById('evTitle').value.trim();
+  if(!title||!selectedCalDay) return;
+  await addDoc(collection(db,'events'),{
+    title, date:`${calYear}-${pad(calMonth+1)}-${pad(selectedCalDay)}`,
+    time:document.getElementById('evTime').value,
+    emoji:selectedEmoji, color:selectedColor, createdAt:Date.now()
+  });
+  document.getElementById('evTitle').value='';
+  document.getElementById('evTime').value='';
+  window.closeCalForm(); toast('📅 אירוע נוסף!');
+  checkDailyNotifications();
+};
+window.deleteEvent = async id => { await deleteDoc(doc(db,'events',id)); };
+
+// ── NOTIFICATIONS ────────────────────────────────────────────
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    await Notification.requestPermission();
+  }
+}
+function checkDailyNotifications() {
+  if (Notification.permission !== 'granted') return;
+  const todayStr = new Date().toISOString().slice(0,10);
+  const todayTasks = tasks.filter(t => t.dueDate === todayStr && !t.done);
+  const todayEvents = events.filter(e => e.date === todayStr);
+  if (todayTasks.length) {
+    new Notification('🏠 הבית שלנו — משימות להיום', {
+      body: todayTasks.map(t => '• ' + t.title).join('\n'),
+      icon: '/icon-192.png'
+    });
+  }
+  if (todayEvents.length) {
+    new Notification('📅 הבית שלנו — אירועים היום', {
+      body: todayEvents.map(e => e.emoji + ' ' + e.title + (e.time ? ' בשעה ' + e.time : '')).join('\n'),
+      icon: '/icon-192.png'
+    });
+  }
+}
+
+// ── PWA ──────────────────────────────────────────────────────
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredInstallPrompt = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+window.installPWA = async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  if (outcome === 'accepted') {
+    document.getElementById('installBanner').classList.remove('show');
+    toast('🎉 האפליקציה הותקנה!');
+  }
+  deferredInstallPrompt = null;
+};
+
+// ── REALTIME LISTENERS ───────────────────────────────────────
+function initListeners() {
+  onSnapshot(collection(db,'tasks'), snap => {
+    tasks = snap.docs.map(d => ({id:d.id,...d.data()}))
+      .sort((a,b) => (a.createdAt||0)-(b.createdAt||0));
+    renderTasks();
+    setSyncStatus(true);
+  }, () => setSyncStatus(false));
+
+  onSnapshot(collection(db,'shopping'), snap => {
+    shopping = snap.docs.map(d => ({id:d.id,...d.data()}))
+      .sort((a,b) => (a.createdAt||0)-(b.createdAt||0));
+    renderShopping();
+  });
+
+  onSnapshot(collection(db,'events'), snap => {
+    events = snap.docs.map(d => ({id:d.id,...d.data()}));
+    renderCalendar();
+  });
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+async function init() {
+  await loadNames();
+  updateNamesUI();
+  initListeners();
+  await requestNotificationPermission();
+  checkDailyNotifications();
+  // Hide loader after first data arrives (max 3s)
+  setTimeout(() => document.getElementById('loader').style.display='none', 1500);
+}
+
+init();
+</script>
+</body>
+</html>
