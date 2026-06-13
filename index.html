@@ -421,8 +421,18 @@ window.openSheet=()=>{
   activeSheet=document.getElementById(sid);
   document.getElementById('sheetBackdrop').classList.add('open');
   activeSheet.classList.add('open');
-  // iOS fix: focus must be triggered by direct user gesture, not setTimeout
-  const f=activeSheet.querySelector('input');if(f)f.focus();
+  // iOS keyboard fix: create temporary input, focus it, then move focus to real input
+  const realInput=activeSheet.querySelector('input:not([type="date"]):not([type="time"])');
+  if(realInput){
+    const tmp=document.createElement('input');
+    tmp.style.cssText='position:fixed;top:50%;left:50%;opacity:0;width:1px;height:1px;font-size:16px;';
+    document.body.appendChild(tmp);
+    tmp.focus();
+    setTimeout(()=>{
+      realInput.focus();
+      tmp.remove();
+    },100);
+  }
 };
 window.closeSheet=()=>{
   document.getElementById('sheetBackdrop').classList.remove('open');
