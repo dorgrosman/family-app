@@ -12,22 +12,21 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handle background push notifications
 messaging.onBackgroundMessage(payload => {
-  const { title, body, icon } = payload.notification || {};
-  self.registration.showNotification(title || '🏠 הבית שלנו', {
-    body: body || '',
-    icon: icon || '/icon-192.png',
-    badge: '/icon-192.png',
-    dir: 'rtl',
-    lang: 'he',
-    vibrate: [200, 100, 200],
-    data: payload.data || {}
+  const title = (payload.notification && payload.notification.title) || '🏠 הבית שלנו';
+  const body = (payload.notification && payload.notification.body) || '';
+  return self.registration.showNotification(title, {
+    body, icon: '/icon-192.png', badge: '/icon-192.png',
+    dir: 'rtl', lang: 'he', vibrate: [200, 100, 200]
   });
 });
 
-// Click on notification → open app
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   e.waitUntil(clients.openWindow('/'));
+});
+
+// Fix: handle message events properly
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
