@@ -671,11 +671,25 @@ function renderShopping(){
   document.getElementById('sumShopping').textContent=pending.length;
   const el=document.getElementById('shopList');
   if(!shopping.length){el.innerHTML='<div class="empty-state"><span class="empty-icon">🛒</span>הרשימה ריקה!</div>';return;}
+
+  // Normalize emoji: support old items that may have 'category' field instead of 'emoji'
+  const getCatEmoji=item=>{
+    if(item.emoji && SHOP_CATS.some(c=>c.emoji===item.emoji)) return item.emoji;
+    if(item.category){
+      // old format may be like "🥦 ירקות ופירות" - extract first emoji-like char
+      const match=SHOP_CATS.find(c=>item.category.includes(c.emoji)||item.category.includes(c.label));
+      if(match)return match.emoji;
+    }
+    return '🛍️'; // fallback to "other"
+  };
+
   let html='';
+  let shownIds=new Set();
   // Group pending by category
   SHOP_CATS.forEach(cat=>{
-    const items=pending.filter(i=>i.emoji===cat.emoji);
+    const items=pending.filter(i=>getCatEmoji(i)===cat.emoji);
     if(!items.length)return;
+    items.forEach(i=>shownIds.add(i.id));
     html+=`<div style="margin-bottom:6px">
       <div style="font-size:12px;font-weight:700;color:var(--muted);margin:14px 0 6px;display:flex;align-items:center;gap:6px">
         <span style="font-size:16px">${cat.emoji}</span>${cat.label}
@@ -684,6 +698,17 @@ function renderShopping(){
       ${items.map(i=>shopItemHTML(i)).join('')}
     </div>`;
   });
+  // Safety net: any pending item that somehow wasn't grouped still shows up
+  const orphans=pending.filter(i=>!shownIds.has(i.id));
+  if(orphans.length){
+    html+=`<div style="margin-bottom:6px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin:14px 0 6px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:16px">🛍️</span>אחר
+        <span style="background:var(--plum-light);color:var(--plum);border-radius:10px;padding:1px 7px;font-size:11px">${orphans.length}</span>
+      </div>
+      ${orphans.map(i=>shopItemHTML(i)).join('')}
+    </div>`;
+  }
   // Done section
   if(done.length){
     html+=`<div class="section-label">✓ נרכשו (${done.length})</div>`;
@@ -724,8 +749,19 @@ function renderCalendar(){
     html+='<div class="cal-cell '+(isToday?'today':'')+'" onclick="calDayTap('+d+')"><span class="cal-num">'+d+'</span><div class="cal-dots">'+dots+'</div></div>';
   }
   document.getElementById('calGrid').innerHTML=html;
-  const todayStr=new Date().toISOString().slice(0,10);
-  const upcoming=events.filter(e=>(e.dateTo||e.dateFrom||e.date||'')>=todayStr).sort((a,b)=>(a.dateFrom||a.date||'').localeCompare(b.dateFrom||b.date||'')).slice(0,8);
+  const now=new Date();
+  const todayStr=now.toISOString().slice(0,10);
+  const nowTime=now.getHours()*60+now.getMinutes();
+  const upcoming=events.filter(e=>{
+    const endDate=e.dateTo||e.dateFrom||e.date||'';
+    if(!endDate)return false;
+    if(endDate>todayStr)return true; // future date entirely
+    if(endDate<todayStr)return false; // past date entirely
+    // endDate === todayStr: check time if present
+    if(!e.time)return true; // no time specified, keep for today
+    const [h,m]=e.time.split(':').map(Number);
+    return (h*60+m)>=nowTime;
+  }).sort((a,b)=>(a.dateFrom||a.date||'').localeCompare(b.dateFrom||b.date||'')).slice(0,8);
   const upEl=document.getElementById('upcomingList');
   const homeEl=document.getElementById('homeEvents');
   document.getElementById('sumEvents').textContent=upcoming.length;
@@ -866,7 +902,7 @@ function initListeners(){
 
 // INIT
 async function init(){
-  if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  // Service worker removed to fix Android install issue
   updateHomeDate();
   await loadNames();updateNamesUI();
   initListeners();listenForPushMessages();
