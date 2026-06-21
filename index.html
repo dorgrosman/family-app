@@ -11,6 +11,7 @@
 <meta name="apple-touch-fullscreen" content="no">
 <link rel="manifest" href="manifest.json">
 <title>הבית שלנו</title>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <style>
 :root {
   --bg: #f7f0eb;
@@ -867,29 +868,54 @@ window.saveKidAppt=async()=>{
 };
 window.deleteEditKid=async()=>{if(!editingKidId)return;if(confirm('למחוק תור?')){await deleteDoc(doc(db,'kids',editingKidId));closeSheet();}};
 
-// PUSH
-async function sendPushToOthers(title,body){
-  try{const myId=localStorage.getItem('deviceId')||'unknown';await addDoc(collection(db,'push_queue'),{title,body,sentAt:Date.now(),fromDevice:myId});}catch(e){}
-}
-function listenForPushMessages(){
-  const myId=localStorage.getItem('deviceId')||('dev_'+Math.random().toString(36).slice(2));
-  localStorage.setItem('deviceId',myId);
-  onSnapshot(collection(db,'push_queue'),snap=>{
-    snap.docChanges().forEach(change=>{
-      if(change.type!=='added')return;
-      const d=change.doc.data();
-      if(d.fromDevice===myId)return;
-      if(Date.now()-(d.sentAt||0)>15000)return;
-      if(Notification.permission==='granted')new Notification(d.title||'🏠 הבית שלנו',{body:d.body||'',icon:'/icon-192.png',dir:'rtl'});
-      else toast('🔔 '+(d.body||d.title||''));
-    });
+// PUSH NOTIFICATIONS (OneSignal — works even when app is closed)
+const ONESIGNAL_APP_ID='64fe5042-af16-44cf-8591-5fd4251427a2';
+const ONESIGNAL_REST_KEY='os_v2_app_mt7faqvpczcm7bmrl7kckfbhulyj7cw3lf6ul34q2sw6l5axwdcsltiej3dophdfl4e76rue6vjjt3lurednhmo4cop26ch3jg5mjjq';
+
+let oneSignalReady=false;
+window.OneSignalDeferred=window.OneSignalDeferred||[];
+window.OneSignalDeferred.push(async function(OneSignal){
+  await OneSignal.init({
+    appId: ONESIGNAL_APP_ID,
+    allowLocalhostAsSecureOrigin: true,
+    notifyButton: { enable: false }
   });
+  oneSignalReady=true;
+  // If already subscribed, hide banner
+  const granted = await OneSignal.Notifications.permission;
+  if(granted) document.getElementById('notifBanner').style.display='none';
+});
+
+async function sendPushToOthers(title,body){
+  try{
+    await fetch('https://onesignal.com/api/v1/notifications',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json; charset=utf-8',
+        'Authorization':'Basic '+ONESIGNAL_REST_KEY
+      },
+      body:JSON.stringify({
+        app_id: ONESIGNAL_APP_ID,
+        included_segments: ['Subscribed Users'],
+        headings: { en: title, he: title },
+        contents: { en: body, he: body },
+        web_url: 'https://family-waabit.netlify.app'
+      })
+    });
+  }catch(e){console.log('Push send error:',e);}
 }
+
 window.requestNotifPermission=async()=>{
-  if(!('Notification'in window))return;
-  const p=await Notification.requestPermission();
   document.getElementById('notifBanner').style.display='none';
-  toast(p==='granted'?'🔔 התראות אופשרו!':'❌ לא אושר');
+  try{
+    if(!oneSignalReady){toast('⏳ עוד טוען... נסה שוב בעוד שנייה');return;}
+    await OneSignal.Notifications.requestPermission();
+    const granted = await OneSignal.Notifications.permission;
+    toast(granted?'🔔 התראות אופשרו!':'❌ לא אושר');
+  }catch(e){
+    toast('❌ שגיאה — נסה לרענן את הדף');
+    console.log('Notif error:',e);
+  }
 };
 
 // LISTENERS
@@ -905,8 +931,11 @@ async function init(){
   // Service worker removed to fix Android install issue
   updateHomeDate();
   await loadNames();updateNamesUI();
-  initListeners();listenForPushMessages();
-  if('Notification'in window&&Notification.permission==='default')document.getElementById('notifBanner').style.display='flex';
+  initListeners();
+  setTimeout(()=>{
+    if(!('Notification'in window))return;
+    if(Notification.permission==='default')document.getElementById('notifBanner').style.display='flex';
+  },2000);
   switchPage('home');
   setTimeout(()=>document.getElementById('loader').style.display='none',1200);
 }
