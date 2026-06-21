@@ -870,7 +870,7 @@ window.deleteEditKid=async()=>{if(!editingKidId)return;if(confirm('למחוק ת
 
 // PUSH NOTIFICATIONS (OneSignal — works even when app is closed)
 const ONESIGNAL_APP_ID='64fe5042-af16-44cf-8591-5fd4251427a2';
-const ONESIGNAL_REST_KEY='os_v2_app_mt7faqvpczcm7bmrl7kckfbhulyj7cw3lf6ul34q2sw6l5axwdcsltiej3dophdfl4e76rue6vjjt3lurednhmo4cop26ch3jg5mjjq';
+// REST key removed — now lives securely in the Cloudflare Worker proxy
 
 let oneSignalInstance=null;
 window.OneSignalDeferred=window.OneSignalDeferred||[];
@@ -888,19 +888,10 @@ window.OneSignalDeferred.push(async function(OneSignal){
 
 async function sendPushToOthers(title,body){
   try{
-    await fetch('https://onesignal.com/api/v1/notifications',{
+    await fetch('https://onesignal-proxy.ddorgrosman.workers.dev/',{
       method:'POST',
-      headers:{
-        'Content-Type':'application/json; charset=utf-8',
-        'Authorization':'Basic '+ONESIGNAL_REST_KEY
-      },
-      body:JSON.stringify({
-        app_id: ONESIGNAL_APP_ID,
-        included_segments: ['Subscribed Users'],
-        headings: { en: title, he: title },
-        contents: { en: body, he: body },
-        web_url: 'https://family-waabit.netlify.app'
-      })
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title,body})
     });
   }catch(e){console.log('Push send error:',e);}
 }
