@@ -11,7 +11,7 @@
 <meta name="apple-touch-fullscreen" content="no">
 <link rel="manifest" href="manifest.json">
 <title>הבית שלנו</title>
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" async></script>
 <style>
 :root {
   --bg: #f7f0eb;
@@ -872,17 +872,17 @@ window.deleteEditKid=async()=>{if(!editingKidId)return;if(confirm('למחוק ת
 const ONESIGNAL_APP_ID='64fe5042-af16-44cf-8591-5fd4251427a2';
 const ONESIGNAL_REST_KEY='os_v2_app_mt7faqvpczcm7bmrl7kckfbhulyj7cw3lf6ul34q2sw6l5axwdcsltiej3dophdfl4e76rue6vjjt3lurednhmo4cop26ch3jg5mjjq';
 
-let oneSignalReady=false;
+let oneSignalInstance=null;
 window.OneSignalDeferred=window.OneSignalDeferred||[];
 window.OneSignalDeferred.push(async function(OneSignal){
+  oneSignalInstance=OneSignal;
   await OneSignal.init({
     appId: ONESIGNAL_APP_ID,
     allowLocalhostAsSecureOrigin: true,
     notifyButton: { enable: false }
   });
-  oneSignalReady=true;
-  // If already subscribed, hide banner
-  const granted = await OneSignal.Notifications.permission;
+  console.log('OneSignal initialized successfully');
+  const granted = OneSignal.Notifications.permission;
   if(granted) document.getElementById('notifBanner').style.display='none';
 });
 
@@ -908,9 +908,9 @@ async function sendPushToOthers(title,body){
 window.requestNotifPermission=async()=>{
   document.getElementById('notifBanner').style.display='none';
   try{
-    if(!oneSignalReady){toast('⏳ עוד טוען... נסה שוב בעוד שנייה');return;}
-    await OneSignal.Notifications.requestPermission();
-    const granted = await OneSignal.Notifications.permission;
+    if(!oneSignalInstance){toast('⏳ עוד טוען... נסה שוב בעוד שנייה');return;}
+    await oneSignalInstance.Notifications.requestPermission();
+    const granted = oneSignalInstance.Notifications.permission;
     toast(granted?'🔔 התראות אופשרו!':'❌ לא אושר');
   }catch(e){
     toast('❌ שגיאה — נסה לרענן את הדף');
