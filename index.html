@@ -1085,69 +1085,163 @@ function autoCategorize(name=''){
   return'📦';
 }
 
-// Parse different credit company formats
+// Parse different credit company formats - based on real file analysis
 function parseCreditFile(workbook){
   const sheet=workbook.Sheets[workbook.SheetNames[0]];
-  const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
+  const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:null,raw:true});
+  const sheetName=workbook.SheetNames[0];
 
-  const transactions=[];
+  // Detect company
   let company='unknown';
-
-  // Detect company from headers
-  const allText=rows.slice(0,10).flat().join(' ').toLowerCase();
-  if(/ישראכרט|isracard/.test(allText))company='isracard';
-  else if(/כ\.א\.ל|cal|ויזה/.test(allText))company='cal';
-  else if(/מקס|max|לאומי קארד/.test(allText))company='max';
+  const allText=rows.slice(0,6).flat().filter(Boolean).join(' ');
+  if(/כאל|CAL|ויזה|מזרחי|טפחות|הפועלים.*ויזה/.test(allText))company='cal';
+  else if(/מקס|max|לאומי קארד|תאריך עסקה.*שם בית העסק.*קטגוריה/.test(allText))company='max';
+  else if(/ישראכרט|isracard/.test(allText))company='isracard';
   else if(/דיינרס/.test(allText))company='diners';
 
-  // Find header row (contains date/amount keywords)
-  let headerIdx=-1;
-  for(let i=0;i<rows.length;i++){
-    const row=rows[i].join(' ');
-    if(/תאריך|שם בית עסק|סכום|חיוב/.test(row)){headerIdx=i;break;}
+  const transactions=[];
+
+  // ── CAL Parser ──
+  // Row 4 = header: [תאריך\nעסקה, שם בית עסק, סכום\nעסקה, סכום\nחיוב, סוג\nעסקה, ענף, הערות]
+  // Data rows start at row 5, date is a JS Date object from openpyxl (XLSX serial → Date)
+  if(company==='cal'){
+    const headerRow=rows.findIndex(r=>r&&r[0]&&String(r[0]).includes('תאריך'));
+    if(headerRow===-1)return{transactions:[],company,error:'לא נמצא header בקובץ CAL'};
+    for(let i=headerRow+1;i<rows.length;i++){
+      const r=rows[i];
+      if(!r||!r[0]||!r[1])continue;
+
+      // Date: CAL with cellDates:true → JS Date object
+      let date='';
+      const rawDate=r[0];
+      if(rawDate instanceof Date){
+        date=rawDate.toISOString().slice(0,10);
+      } else if(typeof rawDate==='number'){
+        const d=new Date(Math.round((rawDate-25569)*86400*1000));
+        date=d.toISOString().slice(0,10);
+      } else if(rawDate){
+        const str=String(rawDate).trim();
+        const m=str.match(/(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})/);
+        if(m){const y=m[3].length===2?'20'+m[3]:m[3];date=`${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;}
+      }
+      if(!date)continue;
+
+      const name=String(r[1]||'').trim();
+      // Use סכום עסקה (col 2) if exists, else סכום חיוב (col 3)
+      const rawAmt=r[2]||r[3];
+      const amount=Math.abs(parseFloat(String(rawAmt||'0').replace(/[,₪\s]/g,'')));
+      if(!name||!amount||isNaN(amount))continue;
+
+      // Map CAL ענף to our emoji categories
+      const branch=String(r[5]||'');
+      const category=calBranchToEmoji(branch,name);
+
+      transactions.push({name,amount,date,category,paymentMethod:'כרטיס אשראי'});
+    }
+    return{transactions,company:'כ.א.ל'};
   }
-  if(headerIdx===-1)return{transactions:[],company,error:'לא זוהה פורמט מוכר'};
+
+  // ── MAX Parser ──
+  // Row 3 = header: [תאריך עסקה, שם בית העסק, קטגוריה, 4 ספרות..., סוג עסקה, סכום חיוב, מטבע חיוב...]
+  // Data rows start at row 4, date format: DD-MM-YYYY
+  if(company==='max'){
+    const headerRow=rows.findIndex(r=>r&&r[0]&&String(r[0]).includes('תאריך עסקה'));
+    if(headerRow===-1)return{transactions:[],company,error:'לא נמצא header בקובץ MAX'};
+    for(let i=headerRow+1;i<rows.length;i++){
+      const r=rows[i];
+      if(!r||!r[0]||!r[1])continue;
+      const str=String(r[0]).trim();
+      if(!str.match(/\d/))continue; // skip summary rows
+
+      // Date: DD-MM-YYYY
+      let date='';
+      const m=str.match(/(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})/);
+      if(m){const y=m[3].length===2?'20'+m[3]:m[3];date=`${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;}
+      if(!date)continue;
+
+      const name=String(r[1]||'').trim();
+      const maxCategory=String(r[2]||'');
+      const rawAmt=r[5]; // סכום חיוב is column 5
+      const amount=Math.abs(parseFloat(String(rawAmt||'0').replace(/[,₪\s]/g,'')));
+      if(!name||!amount||isNaN(amount))continue;
+
+      const category=maxCategoryToEmoji(maxCategory,name);
+      transactions.push({name,amount,date,category,paymentMethod:'כרטיס אשראי'});
+    }
+    return{transactions,company:'מקס'};
+  }
+
+  // ── Fallback generic parser ──
+  let headerIdx=-1;
+  for(let i=0;i<Math.min(rows.length,15);i++){
+    const row=rows[i];
+    if(row&&row.some(c=>c&&/תאריך|date/i.test(String(c)))){headerIdx=i;break;}
+  }
+  if(headerIdx===-1)return{transactions:[],company,error:'לא זוהה פורמט מוכר. נסה קובץ מכ.א.ל, מקס, ישראכרט או דיינרס.'};
 
   const headers=rows[headerIdx];
-  const findCol=(keywords)=>headers.findIndex(h=>keywords.some(k=>String(h).includes(k)));
-
-  const dateCol=findCol(['תאריך עסקה','תאריך','date']);
-  const nameCol=findCol(['שם בית עסק','בית עסק','תיאור','שם','name']);
-  const amountCol=findCol(['סכום עסקה','סכום חיוב','סכום','amount','חיוב']);
-
-  if(dateCol===-1||nameCol===-1||amountCol===-1){
-    return{transactions:[],company,error:'לא נמצאו עמודות תאריך/שם/סכום'};
-  }
+  const findCol=(kws)=>headers.findIndex(h=>kws.some(k=>h&&String(h).includes(k)));
+  const dateCol=findCol(['תאריך']);
+  const nameCol=findCol(['שם בית','תיאור','שם']);
+  const amountCol=findCol(['סכום חיוב','סכום עסקה','סכום']);
 
   for(let i=headerIdx+1;i<rows.length;i++){
-    const row=rows[i];
-    const name=String(row[nameCol]||'').trim();
-    const rawAmount=String(row[amountCol]||'').replace(/[,₪\s]/g,'');
-    const amount=Math.abs(parseFloat(rawAmount));
-    let rawDate=row[dateCol];
-
+    const r=rows[i];
+    const name=String(r[nameCol]||'').trim();
+    const rawAmt=String(r[amountCol]||'').replace(/[,₪\s]/g,'');
+    const amount=Math.abs(parseFloat(rawAmt));
     if(!name||!amount||isNaN(amount))continue;
-
-    // Parse date
-    let date='';
+    let date=new Date().toISOString().slice(0,10);
+    const rawDate=r[dateCol];
     if(typeof rawDate==='number'){
-      // Excel serial date
       const d=new Date(Math.round((rawDate-25569)*86400*1000));
       date=d.toISOString().slice(0,10);
-    }else{
+    } else if(rawDate){
       const str=String(rawDate).trim();
-      // Try DD/MM/YYYY or DD.MM.YYYY
-      const m=str.match(/(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})/);
-      if(m){
-        const y=m[3].length===2?'20'+m[3]:m[3];
-        date=`${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
-      }else{date=new Date().toISOString().slice(0,10);}
+      const m2=str.match(/(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})/);
+      if(m2){const y=m2[3].length===2?'20'+m2[3]:m2[3];date=`${y}-${m2[2].padStart(2,'0')}-${m2[1].padStart(2,'0')}`;}
     }
-
-    transactions.push({name,amount,date,category:autoCategorize(name)});
+    transactions.push({name,amount,date,category:autoCategorize(name),paymentMethod:'כרטיס אשראי'});
   }
-
   return{transactions,company};
+}
+
+// CAL branch (ענף) → emoji
+function calBranchToEmoji(branch,name=''){
+  const b=branch||'';
+  if(/מזון|מסעדה|מסעדות/.test(b))return'🍔';
+  if(/סופרמרקט|מכולת|קניות/.test(b))return'🛒';
+  if(/רכב|תחבורה|דלק|אנרגיה/.test(b))return'🚗';
+  if(/ביגוד|הנעלה|אופנה/.test(b))return'👕';
+  if(/בריאות|רפואה|פארמה|קופת חולים/.test(b))return'🏥';
+  if(/חינוך|לימוד/.test(b))return'🎓';
+  if(/בילוי|תרבות|ספורט|פנאי/.test(b))return'🎬';
+  if(/ריהוט|בית/.test(b))return'🏠';
+  if(/ביטוח/.test(b))return'📦';
+  if(/תשלום|מוסדות|עירייה|ממשלה/.test(b))return'💡';
+  if(/מחשב|טכנולוגיה|תקשורת/.test(b))return'💡';
+  if(/מזל|הימור/.test(b))return'🎬';
+  return autoCategorize(name);
+}
+
+// MAX category → emoji
+function maxCategoryToEmoji(cat,name=''){
+  const c=cat||'';
+  if(/מזון|מסעדה|קפה|בית קפה/.test(c))return'🍔';
+  if(/סופר|מכולת/.test(c))return'🛒';
+  if(/רכב|תחבורה|דלק|תדלוק/.test(c))return'🚗';
+  if(/ביגוד|אופנה|הנעלה/.test(c))return'👕';
+  if(/בריאות|רפואה|פארמ/.test(c))return'🏥';
+  if(/חינוך|לימוד/.test(c))return'🎓';
+  if(/בילוי|ספורט|פנאי|תרבות/.test(c))return'🎬';
+  if(/בית|ריהוט/.test(c))return'🏠';
+  if(/ביטוח/.test(c))return'📦';
+  if(/עירייה|ממשלה|מיסים/.test(c))return'💡';
+  if(/אינטרנט|סלולר|תקשורת/.test(c))return'💡';
+  if(/משכנתה|שכירות/.test(c))return'🏦';
+  if(/ילד/.test(c))return'👶';
+  if(/חופשה|נסיעה|טיול/.test(c))return'✈️';
+  return autoCategorize(name);
 }
 
 window.importCreditFile=function(input){
@@ -1159,7 +1253,7 @@ window.importCreditFile=function(input){
   reader.onload=function(e){
     try{
       const data=new Uint8Array(e.target.result);
-      const workbook=XLSX.read(data,{type:'array'});
+      const workbook=XLSX.read(data,{type:'array',cellDates:true});
       const {transactions,company,error}=parseCreditFile(workbook);
 
       pendingImportRows=transactions;
