@@ -355,10 +355,16 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 
 <!-- ══ BUDGET PAGE ══ -->
 <div class="page" id="page-budget">
-  <div class="page-header">
-    <div class="page-title">תקציב <span>💰</span></div>
-    <div class="page-subtitle">מעקב הוצאות משפחתי</div>
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+    <button onclick="document.getElementById('creditImportInput').click()" style="background:var(--plum-light);color:var(--plum);border-radius:14px;padding:10px 14px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;margin-top:4px">
+      📂 ייבוא מאשראי
+    </button>
+    <div style="text-align:right">
+      <div class="page-title">תקציב <span>💰</span></div>
+      <div class="page-subtitle">מעקב הוצאות משפחתי</div>
+    </div>
   </div>
+  <input type="file" id="creditImportInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="importCreditFile(this)">
 
   <!-- Insights -->
   <div id="budgetInsights"></div>
@@ -627,6 +633,18 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   <button class="btn-delete" id="expDeleteBtn" style="display:none" onclick="deleteEditExpense()">🗑️ מחק הוצאה</button>
 </div>
 
+<!-- CREDIT IMPORT SHEET -->
+<div class="sheet" id="importSheet" style="max-height:95vh">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button class="sheet-close" onclick="closeSheet()">×</button>
+    <div class="sheet-title">ייבוא מחברת אשראי</div>
+  </div>
+  <div id="importStatus" style="background:var(--plum-light);border-radius:12px;padding:12px;margin-bottom:14px;font-size:13px;color:var(--plum);font-weight:600;text-align:center"></div>
+  <div id="importPreview"></div>
+  <button class="btn-submit" id="importConfirmBtn" style="display:none" onclick="confirmImport()">ייבא עסקאות לאפליקציה ✅</button>
+</div>
+
 <div id="notifBanner">
   <div style="font-size:13px;font-weight:600;flex:1">🔔 אפשר התראות!</div>
   <button onclick="requestNotifPermission()" style="background:#fff;color:var(--sage);border:none;border-radius:10px;padding:7px 12px;font-weight:700;font-size:13px;font-family:inherit">אפשר</button>
@@ -634,6 +652,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 </div>
 <div id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore,collection,onSnapshot,addDoc,updateDoc,deleteDoc,doc,setDoc,getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -738,7 +757,7 @@ window.openSheet=()=>{
     document.getElementById('expDeleteBtn').style.display='none';
     document.getElementById('expPaidBy').innerHTML='<option>'+myName+'</option><option>'+partnerName+'</option>';
   }
-    document.getElementById('kidsSheetTitle').textContent='תור חדש';
+  if(currentPage==='kids'){
     ['kidTitle','kidChild','kidLocation','kidNotes'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('kidDate').value='';document.getElementById('kidTime').value='';
     document.getElementById('kidsSubmitBtn').textContent='הוסף תור';
@@ -1022,7 +1041,179 @@ window.saveKidAppt=async()=>{
 };
 window.deleteEditKid=async()=>{if(!editingKidId)return;if(confirm('למחוק תור?')){await deleteDoc(doc(db,'kids',editingKidId));closeSheet();}};
 
-// ══ BUDGET MODULE ══
+// ══ CREDIT IMPORT ══
+let pendingImportRows=[];
+
+// Auto-categorize by merchant name
+function autoCategorize(name=''){
+  const n=name.toLowerCase();
+  if(/סופר|רמי לוי|שופרסל|מגה|יינות|מחסני|אסם|קשת/.test(n))return'🛒';
+  if(/דלק|סונול|פז|דור אלון|ten|אלון/.test(n))return'⛽';
+  if(/מסעדה|פיצה|בורגר|שווארמה|סושי|קפה|cafe|restaurant|מקדונלד|שטראוס/.test(n))return'🍔';
+  if(/בגד|זארה|h&m|קסטרו|רנואר|פוקס|golf|כותנה/.test(n))return'👕';
+  if(/חשמל|מים|גז|בזק|hot|yes|cellcom|partner|פרטנר/.test(n))return'💡';
+  if(/רופא|מרפאה|קופת חולים|בית חולים|תרופ|בריא/.test(n))return'🏥';
+  if(/גן|צהרון|בית ספר|אוניברסיטה|תלמוד|לימוד/.test(n))return'👶';
+  if(/טיסה|מלון|airbnb|booking|אתר|כרטיס טיסה/.test(n))return'✈️';
+  if(/קולנוע|תיאטרון|בילוי|פנאי|ספורט|כושר/.test(n))return'🎬';
+  if(/ביטוח|פניקס|הראל|מגדל|הפניקס/.test(n))return'📦';
+  if(/משכנתה|שכירות|דירה|בנק/.test(n))return'🏦';
+  if(/רכב|טסט|ביטוח רכב|מוסך|חניה/.test(n))return'🚗';
+  return'📦';
+}
+
+// Parse different credit company formats
+function parseCreditFile(workbook){
+  const sheet=workbook.Sheets[workbook.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
+
+  const transactions=[];
+  let company='unknown';
+
+  // Detect company from headers
+  const allText=rows.slice(0,10).flat().join(' ').toLowerCase();
+  if(/ישראכרט|isracard/.test(allText))company='isracard';
+  else if(/כ\.א\.ל|cal|ויזה/.test(allText))company='cal';
+  else if(/מקס|max|לאומי קארד/.test(allText))company='max';
+  else if(/דיינרס/.test(allText))company='diners';
+
+  // Find header row (contains date/amount keywords)
+  let headerIdx=-1;
+  for(let i=0;i<rows.length;i++){
+    const row=rows[i].join(' ');
+    if(/תאריך|שם בית עסק|סכום|חיוב/.test(row)){headerIdx=i;break;}
+  }
+  if(headerIdx===-1)return{transactions:[],company,error:'לא זוהה פורמט מוכר'};
+
+  const headers=rows[headerIdx];
+  const findCol=(keywords)=>headers.findIndex(h=>keywords.some(k=>String(h).includes(k)));
+
+  const dateCol=findCol(['תאריך עסקה','תאריך','date']);
+  const nameCol=findCol(['שם בית עסק','בית עסק','תיאור','שם','name']);
+  const amountCol=findCol(['סכום עסקה','סכום חיוב','סכום','amount','חיוב']);
+
+  if(dateCol===-1||nameCol===-1||amountCol===-1){
+    return{transactions:[],company,error:'לא נמצאו עמודות תאריך/שם/סכום'};
+  }
+
+  for(let i=headerIdx+1;i<rows.length;i++){
+    const row=rows[i];
+    const name=String(row[nameCol]||'').trim();
+    const rawAmount=String(row[amountCol]||'').replace(/[,₪\s]/g,'');
+    const amount=Math.abs(parseFloat(rawAmount));
+    let rawDate=row[dateCol];
+
+    if(!name||!amount||isNaN(amount))continue;
+
+    // Parse date
+    let date='';
+    if(typeof rawDate==='number'){
+      // Excel serial date
+      const d=new Date(Math.round((rawDate-25569)*86400*1000));
+      date=d.toISOString().slice(0,10);
+    }else{
+      const str=String(rawDate).trim();
+      // Try DD/MM/YYYY or DD.MM.YYYY
+      const m=str.match(/(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})/);
+      if(m){
+        const y=m[3].length===2?'20'+m[3]:m[3];
+        date=`${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+      }else{date=new Date().toISOString().slice(0,10);}
+    }
+
+    transactions.push({name,amount,date,category:autoCategorize(name)});
+  }
+
+  return{transactions,company};
+}
+
+window.importCreditFile=function(input){
+  const file=input.files[0];
+  if(!file)return;
+  input.value='';
+
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=new Uint8Array(e.target.result);
+      const workbook=XLSX.read(data,{type:'array'});
+      const {transactions,company,error}=parseCreditFile(workbook);
+
+      pendingImportRows=transactions;
+
+      // Show import sheet
+      activeSheet=document.getElementById('importSheet');
+      document.getElementById('sheetBackdrop').classList.add('open');
+      activeSheet.classList.add('open');
+
+      const statusEl=document.getElementById('importStatus');
+      const previewEl=document.getElementById('importPreview');
+      const confirmBtn=document.getElementById('importConfirmBtn');
+
+      if(error||!transactions.length){
+        statusEl.textContent=error||'לא נמצאו עסקאות בקובץ';
+        statusEl.style.background='#fde8e8';statusEl.style.color='#e8736a';
+        previewEl.innerHTML='';confirmBtn.style.display='none';
+        return;
+      }
+
+      const total=transactions.reduce((s,t)=>s+t.amount,0);
+      // Group by month
+      const months={};
+      transactions.forEach(t=>{const m=t.date.slice(0,7);months[m]=(months[m]||0)+1;});
+      const monthList=Object.keys(months).sort();
+
+      statusEl.style.background='var(--plum-light)';statusEl.style.color='var(--plum)';
+      statusEl.innerHTML=`זוהתה חברת אשראי: <b>${company}</b><br>נמצאו <b>${transactions.length}</b> עסקאות • סה"כ ${fmt(total)}<br>חודשים: ${monthList.map(m=>{const[y,mo]=m.split('-');return HEB_MONTHS_FULL[parseInt(mo)-1]+' '+y;}).join(', ')}`;
+
+      previewEl.innerHTML='<div style="max-height:340px;overflow-y:auto">'+
+        transactions.slice(0,20).map(t=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:20px">${t.category}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
+              <div style="font-size:11px;color:var(--muted)">${t.date}</div>
+            </div>
+            <div style="font-size:14px;font-weight:700;color:var(--plum);flex-shrink:0">${fmt(t.amount)}</div>
+          </div>`).join('')+
+        (transactions.length>20?`<div style="text-align:center;color:var(--muted);font-size:12px;padding:10px">...ועוד ${transactions.length-20} עסקאות</div>`:'')+
+        '</div>';
+
+      confirmBtn.style.display='block';
+    }catch(err){
+      document.getElementById('importStatus').textContent='שגיאה בקריאת הקובץ: '+err.message;
+      document.getElementById('importPreview').innerHTML='';
+      document.getElementById('importConfirmBtn').style.display='none';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+};
+
+window.confirmImport=async()=>{
+  if(!pendingImportRows.length)return;
+  document.getElementById('importConfirmBtn').disabled=true;
+  document.getElementById('importConfirmBtn').textContent='מייבא...';
+
+  let count=0;
+  for(const t of pendingImportRows){
+    await addDoc(collection(db,'expenses'),{
+      amount:t.amount,
+      date:t.date,
+      category:t.category,
+      description:t.name,
+      paidBy:myName,
+      paymentMethod:'כרטיס אשראי',
+      notes:'יובא אוטומטית',
+      createdAt:Date.now()+count
+    });
+    count++;
+  }
+
+  closeSheet();
+  pendingImportRows=[];
+  toast('✅ יובאו '+count+' עסקאות!');
+  sendPushToOthers('📂 יובאו עסקאות!','יובאו '+count+' עסקאות מחברת האשראי');
+};
 const HEB_MONTHS_FULL=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 let expenses=[],budgetSettings={};
 let budgetYear=new Date().getFullYear(),budgetMonth=new Date().getMonth();
