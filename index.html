@@ -364,7 +364,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
       <div style="font-size:12px;color:var(--muted);margin-top:2px">מעקב הוצאות הבית</div>
     </div>
   </div>
-  <input type="file" id="creditImportInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="importCreditFile(this)">
+  <input type="file" id="creditImportInput" accept=".xlsx,.xls,.csv" style="display:none" multiple onchange="importCreditFile(this)">
 
   <!-- Summary Cards -->
   <div class="summary-grid" style="margin-bottom:20px">
@@ -794,6 +794,9 @@ window.closeSheet=()=>{
   document.getElementById('sheetBackdrop').classList.remove('open');
   if(activeSheet)activeSheet.classList.remove('open');
   activeSheet=null;
+  // Reset import button if stuck
+  const btn=document.getElementById('importConfirmBtn');
+  if(btn){btn.disabled=false;btn.textContent='ייבא עסקאות לאפליקציה ✅';}
 };
 
 // TASKS
@@ -1245,58 +1248,46 @@ function maxCategoryToEmoji(cat,name=''){
 }
 
 window.importCreditFile=function(input){
-  const file=input.files[0];
-  if(!file)return;
+  const files=Array.from(input.files);
+  if(!files.length)return;
   input.value='';
 
+  if(files.length>1){
+    // Multiple files — process all and merge
+    let allTransactions=[];
+    let processed=0;
+    let companiesFound=[];
+    files.forEach(file=>{
+      const reader=new FileReader();
+      reader.onload=function(e){
+        try{
+          const data=new Uint8Array(e.target.result);
+          const workbook=XLSX.read(data,{type:'array',cellDates:true});
+          const {transactions,company}=parseCreditFile(workbook);
+          allTransactions=[...allTransactions,...transactions];
+          companiesFound.push(company);
+        }catch(err){console.log('Error reading file:',err);}
+        processed++;
+        if(processed===files.length){
+          pendingImportRows=allTransactions;
+          showImportPreview(allTransactions,companiesFound.join(', '));
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+    return;
+  }
+
+  // Single file
+  const file=files[0];
   const reader=new FileReader();
   reader.onload=function(e){
     try{
       const data=new Uint8Array(e.target.result);
       const workbook=XLSX.read(data,{type:'array',cellDates:true});
       const {transactions,company,error}=parseCreditFile(workbook);
-
       pendingImportRows=transactions;
-
-      // Show import sheet
-      activeSheet=document.getElementById('importSheet');
-      document.getElementById('sheetBackdrop').classList.add('open');
-      activeSheet.classList.add('open');
-
-      const statusEl=document.getElementById('importStatus');
-      const previewEl=document.getElementById('importPreview');
-      const confirmBtn=document.getElementById('importConfirmBtn');
-
-      if(error||!transactions.length){
-        statusEl.textContent=error||'לא נמצאו עסקאות בקובץ';
-        statusEl.style.background='#fde8e8';statusEl.style.color='#e8736a';
-        previewEl.innerHTML='';confirmBtn.style.display='none';
-        return;
-      }
-
-      const total=transactions.reduce((s,t)=>s+t.amount,0);
-      // Group by month
-      const months={};
-      transactions.forEach(t=>{const m=t.date.slice(0,7);months[m]=(months[m]||0)+1;});
-      const monthList=Object.keys(months).sort();
-
-      statusEl.style.background='var(--plum-light)';statusEl.style.color='var(--plum)';
-      statusEl.innerHTML=`זוהתה חברת אשראי: <b>${company}</b><br>נמצאו <b>${transactions.length}</b> עסקאות • סה"כ ${fmt(total)}<br>חודשים: ${monthList.map(m=>{const[y,mo]=m.split('-');return HEB_MONTHS_FULL[parseInt(mo)-1]+' '+y;}).join(', ')}`;
-
-      previewEl.innerHTML='<div style="max-height:340px;overflow-y:auto">'+
-        transactions.slice(0,20).map(t=>`
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
-            <span style="font-size:20px">${t.category}</span>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
-              <div style="font-size:11px;color:var(--muted)">${t.date}</div>
-            </div>
-            <div style="font-size:14px;font-weight:700;color:var(--plum);flex-shrink:0">${fmt(t.amount)}</div>
-          </div>`).join('')+
-        (transactions.length>20?`<div style="text-align:center;color:var(--muted);font-size:12px;padding:10px">...ועוד ${transactions.length-20} עסקאות</div>`:'')+
-        '</div>';
-
-      confirmBtn.style.display='block';
+      showImportPreview(transactions,company,error);
     }catch(err){
       document.getElementById('importStatus').textContent='שגיאה בקריאת הקובץ: '+err.message;
       document.getElementById('importPreview').innerHTML='';
@@ -1305,6 +1296,48 @@ window.importCreditFile=function(input){
   };
   reader.readAsArrayBuffer(file);
 };
+
+function showImportPreview(transactions,company,error){
+  // Show import sheet
+  activeSheet=document.getElementById('importSheet');
+  document.getElementById('sheetBackdrop').classList.add('open');
+  activeSheet.classList.add('open');
+
+  const statusEl=document.getElementById('importStatus');
+  const previewEl=document.getElementById('importPreview');
+  const confirmBtn=document.getElementById('importConfirmBtn');
+  confirmBtn.disabled=false;
+  confirmBtn.textContent='ייבא עסקאות לאפליקציה ✅';
+
+  if(error||!transactions.length){
+    statusEl.textContent=error||'לא נמצאו עסקאות בקובץ';
+    statusEl.style.background='#fde8e8';statusEl.style.color='#e8736a';
+    previewEl.innerHTML='';confirmBtn.style.display='none';
+    return;
+  }
+
+  const total=transactions.reduce((s,t)=>s+t.amount,0);
+  const months={};
+  transactions.forEach(t=>{const m=t.date.slice(0,7);months[m]=(months[m]||0)+1;});
+  const monthList=Object.keys(months).sort();
+
+  statusEl.style.background='var(--plum-light)';statusEl.style.color='var(--plum)';
+  statusEl.innerHTML=`זוהתה חברת אשראי: <b>${company}</b><br>נמצאו <b>${transactions.length}</b> עסקאות • סה"כ ${fmt(total)}<br>חודשים: ${monthList.map(m=>{const[y,mo]=m.split('-');return HEB_MONTHS_FULL[parseInt(mo)-1]+' '+y;}).join(', ')}`;
+
+  previewEl.innerHTML='<div style="max-height:340px;overflow-y:auto">'+
+    transactions.slice(0,20).map(t=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:20px">${t.category}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${t.date}</div>
+        </div>
+        <div style="font-size:14px;font-weight:700;color:var(--plum);flex-shrink:0">${fmt(t.amount)}</div>
+      </div>`).join('')+
+    (transactions.length>20?`<div style="text-align:center;color:var(--muted);font-size:12px;padding:10px">...ועוד ${transactions.length-20} עסקאות</div>`:'')+
+    '</div>';
+  confirmBtn.style.display='block';
+}
 
 window.confirmImport=async()=>{
   if(!pendingImportRows.length)return;
@@ -1328,6 +1361,9 @@ window.confirmImport=async()=>{
 
   closeSheet();
   pendingImportRows=[];
+  // Reset button
+  const btn=document.getElementById('importConfirmBtn');
+  if(btn){btn.disabled=false;btn.textContent='ייבא עסקאות לאפליקציה ✅';}
   toast('✅ יובאו '+count+' עסקאות!');
   sendPushToOthers('📂 יובאו עסקאות!','יובאו '+count+' עסקאות מחברת האשראי');
 };
