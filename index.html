@@ -1342,10 +1342,29 @@ function showImportPreview(transactions,company,error){
 window.confirmImport=async()=>{
   if(!pendingImportRows.length)return;
   document.getElementById('importConfirmBtn').disabled=true;
-  document.getElementById('importConfirmBtn').textContent='מייבא...';
+  document.getElementById('importConfirmBtn').textContent='בודק כפילויות...';
 
+  // Build fingerprint of existing expenses to detect duplicates
+  const existingFingerprints=new Set(
+    expenses.map(e=>`${e.date}|${e.amount}|${(e.description||'').slice(0,10)}`)
+  );
+
+  const newRows=pendingImportRows.filter(t=>{
+    const fp=`${t.date}|${t.amount}|${(t.name||'').slice(0,10)}`;
+    return !existingFingerprints.has(fp);
+  });
+  const skipped=pendingImportRows.length-newRows.length;
+
+  if(!newRows.length){
+    closeSheet();
+    pendingImportRows=[];
+    toast('⚠️ כל העסקאות כבר קיימות — לא נוסף כלום');
+    return;
+  }
+
+  document.getElementById('importConfirmBtn').textContent='מייבא...';
   let count=0;
-  for(const t of pendingImportRows){
+  for(const t of newRows){
     await addDoc(collection(db,'expenses'),{
       amount:t.amount,
       date:t.date,
@@ -1361,10 +1380,9 @@ window.confirmImport=async()=>{
 
   closeSheet();
   pendingImportRows=[];
-  // Reset button
   const btn=document.getElementById('importConfirmBtn');
   if(btn){btn.disabled=false;btn.textContent='ייבא עסקאות לאפליקציה ✅';}
-  toast('✅ יובאו '+count+' עסקאות!');
+  toast('✅ יובאו '+count+' עסקאות'+(skipped?' • '+skipped+' כפילויות דולגו':'')+'!');
   sendPushToOthers('📂 יובאו עסקאות!','יובאו '+count+' עסקאות מחברת האשראי');
 };
 const HEB_MONTHS_FULL=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
