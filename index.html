@@ -401,7 +401,16 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
     <div id="budgetBarChart" style="direction:ltr"></div>
   </div>
 
-  <!-- Donut Chart + Category Breakdown -->
+  <!-- Yearly Donut Chart -->
+  <div style="background:#fff;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+    <div style="font-size:15px;font-weight:800;text-align:right;margin-bottom:14px">🍕 לפי קטגוריות (שנתי <span id="yearlyDonutYear"></span>)</div>
+    <div style="display:flex;justify-content:center;margin-bottom:16px">
+      <canvas id="yearlyDonutChart" width="180" height="180"></canvas>
+    </div>
+    <div id="yearlyDonutLegend" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;direction:rtl"></div>
+  </div>
+
+  <!-- Monthly Donut Chart -->
   <div style="background:#fff;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
     <div style="font-size:15px;font-weight:800;text-align:right;margin-bottom:14px">🍕 לפי קטגוריות (החודש)</div>
     <div style="display:flex;justify-content:center;margin-bottom:16px">
@@ -1462,6 +1471,7 @@ function renderBudget(){
   if(el('budgetChartYear'))el('budgetChartYear').textContent=budgetYear;
 
   renderBarChart(budgetYear);
+  renderYearlyDonutChart(budgetYear);
   renderDonutChart(monthExps,monthTotal);
   renderBudgetProgress(monthTotal,globalBudget);
   renderInsights(monthExps,monthTotal,globalBudget,dailyAvg);
@@ -1489,6 +1499,58 @@ function renderBarChart(year){
       </div>`;
     }).join('')}
   </div>`;
+}
+
+function renderYearlyDonutChart(year){
+  const canvas=document.getElementById('yearlyDonutChart');
+  const legendEl=document.getElementById('yearlyDonutLegend');
+  const yearLabel=document.getElementById('yearlyDonutYear');
+  if(!canvas)return;
+  if(yearLabel)yearLabel.textContent=year;
+
+  const yearExps=getYearExpenses(year);
+  const yearTotal=yearExps.reduce((s,e)=>s+Number(e.amount||0),0);
+  const catTotals={};
+  yearExps.forEach(e=>{catTotals[e.category]=(catTotals[e.category]||0)+Number(e.amount||0);});
+  const entries=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
+
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,180,180);
+
+  if(!entries.length){
+    ctx.fillStyle='#eee';ctx.beginPath();ctx.arc(90,90,70,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(90,90,42,0,Math.PI*2);ctx.fill();
+    // Year total in center
+    ctx.fillStyle='#aaa';ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('אין נתונים',90,90);
+    if(legendEl)legendEl.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--muted);font-size:13px;padding:8px">אין נתונים השנה</div>';
+    return;
+  }
+
+  let startAngle=-Math.PI/2;
+  entries.forEach(([emoji,amt],i)=>{
+    const slice=yearTotal?(amt/yearTotal)*Math.PI*2:0;
+    ctx.beginPath();ctx.moveTo(90,90);
+    ctx.arc(90,90,70,startAngle,startAngle+slice);
+    ctx.closePath();ctx.fillStyle=CAT_COLORS[i%CAT_COLORS.length];ctx.fill();
+    startAngle+=slice;
+  });
+  // Inner white circle
+  ctx.beginPath();ctx.arc(90,90,42,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+  // Year total in center
+  ctx.fillStyle='var(--text)';ctx.font='bold 12px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#555';
+  ctx.fillText(fmt(yearTotal),90,90);
+
+  if(legendEl)legendEl.innerHTML=entries.slice(0,10).map(([emoji,amt],i)=>{
+    const label=EXPENSE_CATS.find(c=>c.emoji===emoji)?.label||emoji;
+    const pct=yearTotal?Math.round(amt/yearTotal*100):0;
+    return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0">
+      <div style="width:10px;height:10px;border-radius:50%;background:${CAT_COLORS[i%CAT_COLORS.length]};flex-shrink:0"></div>
+      <span style="font-size:11px;color:var(--muted);flex:1;text-align:right">${emoji} ${label}</span>
+      <span style="font-size:11px;font-weight:700;color:var(--text)">${fmt(amt)} <span style="color:var(--muted);font-weight:400">${pct}%</span></span>
+    </div>`;
+  }).join('');
 }
 
 function renderDonutChart(monthExps,total){
