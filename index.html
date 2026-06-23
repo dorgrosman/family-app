@@ -1099,7 +1099,7 @@ function parseCreditFile(workbook){
   const allText=rows.slice(0,6).flat().filter(Boolean).join(' ');
   if(/כאל|CAL|ויזה|מזרחי|טפחות|הפועלים.*ויזה/.test(allText))company='cal';
   else if(/מקס|max|לאומי קארד|תאריך עסקה.*שם בית העסק.*קטגוריה/.test(allText))company='max';
-  else if(/ישראכרט|isracard/.test(allText))company='isracard';
+  else if(/ישראכרט|isracard|פירוט עסקאות|מסטרקארד|מאסטרקארד/.test(allText))company='isracard';
   else if(/דיינרס/.test(allText))company='diners';
 
   const transactions=[];
@@ -1174,7 +1174,40 @@ function parseCreditFile(workbook){
     return{transactions,company:'מקס'};
   }
 
-  // ── Fallback generic parser ──
+  // ── Isracard Parser ──
+  // Two sections: "עסקאות שטרם נקלטו" (col 0=date, 1=name, 2=amount)
+  //               "עסקאות למועד חיוב" (col 0=date, 1=name, 2=amount, 4=chargedAmount)
+  // Date format: DD.MM.YY
+  if(company==='isracard'){
+    function parseIsracardDate(str){
+      const s=String(str||'').trim();
+      const m=s.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
+      if(!m)return'';
+      const y=m[3].length===2?'20'+m[3]:m[3];
+      return`${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+    }
+    // Find both header rows
+    const sections=[];
+    rows.forEach((r,i)=>{
+      if(r&&r[0]&&/תאריך רכישה/.test(String(r[0])))sections.push(i);
+    });
+    sections.forEach(headerIdx=>{
+      for(let i=headerIdx+1;i<rows.length;i++){
+        const r=rows[i];
+        if(!r||!r[0])continue;
+        const dateStr=String(r[0]).trim();
+        if(!dateStr.match(/\d{1,2}\.\d{1,2}\.\d{2,4}/))break; // end of section
+        const date=parseIsracardDate(dateStr);
+        const name=String(r[1]||'').trim();
+        // Use charged amount (col 4) if available, else transaction amount (col 2)
+        const rawAmt=r[4]||r[2];
+        const amount=Math.abs(parseFloat(String(rawAmt||'0').replace(/[,₪\s]/g,'')));
+        if(!name||!amount||isNaN(amount))continue;
+        transactions.push({name,amount,date,category:autoCategorize(name),paymentMethod:'כרטיס אשראי'});
+      }
+    });
+    return{transactions,company:'ישראכרט'};
+  }
   let headerIdx=-1;
   for(let i=0;i<Math.min(rows.length,15);i++){
     const row=rows[i];
