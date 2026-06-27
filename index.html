@@ -692,48 +692,6 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 <button type="button" class="fab" id="fab" onclick="openSheet()">+</button>
 <div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSheet()"></div>
 
-<!-- RECURRING EXPENSE SHEET -->
-<div class="sheet" id="recurringSheet">
-  <div class="sheet-handle"></div>
-  <div class="sheet-header">
-    <button class="sheet-close" onclick="closeSheet()">×</button>
-    <div class="sheet-title" id="recurringSheetTitle">הוצאה קבועה חדשה</div>
-  </div>
-  <div class="field-label">שם ההוצאה</div>
-  <input class="input-field" id="recName" placeholder="למשל: גן ילדים, חוג שחייה, נטפליקס...">
-  <div class="field-label">קטגוריה</div>
-  <select class="select-field" id="recCategory">
-    <option value="👶">👶 גן / צהרון</option>
-    <option value="🎨">🎨 חוגים</option>
-    <option value="📱">📱 מנויים דיגיטליים</option>
-    <option value="🏋️">🏋️ כושר / ספורט</option>
-    <option value="💡">💡 חשבונות</option>
-    <option value="🏦">🏦 ביטוחים</option>
-    <option value="🚗">🚗 רכב</option>
-    <option value="🏠">🏠 בית</option>
-    <option value="📦">📦 אחר</option>
-  </select>
-  <div class="form-row">
-    <div><div class="field-label">סכום (₪)</div><input class="input-field" type="number" id="recAmount" placeholder="0"></div>
-    <div><div class="field-label">יום בחודש</div><input class="input-field" type="number" id="recDay" placeholder="1-28" min="1" max="28"></div>
-  </div>
-  <div class="form-row">
-    <div><div class="field-label">מתאריך</div><input class="input-field" type="date" id="recStartDate"></div>
-    <div><div class="field-label">עד תאריך</div><input class="input-field" type="date" id="recEndDate"></div>
-  </div>
-  <div class="field-label">תדירות</div>
-  <select class="select-field" id="recFrequency">
-    <option value="monthly">חודשי</option>
-    <option value="yearly">שנתי</option>
-    <option value="weekly">שבועי</option>
-    <option value="quarterly">רבעוני</option>
-  </select>
-  <div class="field-label">הערות</div>
-  <input class="input-field" id="recNotes" placeholder="פרטים נוספים...">
-  <button class="btn-submit" style="background:var(--rose)" id="recurringSubmitBtn" onclick="saveRecurring()">הוסף הוצאה קבועה</button>
-  <button class="btn-delete" id="recurringDeleteBtn" style="display:none" onclick="deleteEditRecurring()">🗑️ מחק</button>
-</div>
-
 <!-- RECURRING SHEET -->
 <div class="sheet" id="recurringSheet">
   <div class="sheet-handle"></div>
@@ -2028,10 +1986,14 @@ async function autoUpdateLoans(){
   const todayDay=today.getDate();
   if(todayDay<15)return; // Only process on/after the 15th
 
+  const todayStr=today.toISOString().slice(0,10);
   for(const loan of loans){
     if(!loan.monthly||!loan.nextDate)continue;
     const next=new Date(loan.nextDate);
     if(today<next)continue; // Not due yet
+
+    // Skip if already updated today (prevents double-update after delete/re-add)
+    if(loan.lastUpdated===todayStr)continue;
 
     const balance=Number(loan.balance||0);
     const monthly=Number(loan.monthly||0);
