@@ -484,6 +484,55 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 
 </div>
 
+<!-- ══ LOANS PAGE ══ -->
+<div class="page" id="page-loans">
+
+  <!-- Header -->
+  <div style="text-align:right;margin-bottom:20px;padding-top:calc(var(--safe-top) + 4px)">
+    <div style="font-size:24px;font-weight:800;color:var(--text)">הלוואות ומשכנתא 🏦</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:2px">מעקב יתרות ותשלומים</div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid" style="margin-bottom:20px">
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">📅</div>
+      <div style="font-size:20px;font-weight:800;color:var(--text)" id="loanMonthlyTotal">₪0</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">תשלום חודשי כולל</div>
+    </div>
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">💰</div>
+      <div style="font-size:20px;font-weight:800;color:var(--text)" id="loanTotalBalance">₪0</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">יתרה כוללת</div>
+    </div>
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">📊</div>
+      <div style="font-size:20px;font-weight:800;color:var(--text)" id="loanActiveCount">0</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">הלוואות פעילות</div>
+    </div>
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">📅</div>
+      <div style="font-size:18px;font-weight:800;color:var(--text)" id="loanNextPayment">—</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">תשלום הבא</div>
+    </div>
+  </div>
+
+  <!-- Loans List -->
+  <div id="loansList"></div>
+
+  <!-- Loan Detail Modal -->
+  <div id="loanDetailModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:flex-end">
+    <div style="background:var(--card);border-radius:24px 24px 0 0;padding:20px 20px 40px;width:100%;max-height:85vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <button onclick="document.getElementById('loanDetailModal').style.display='none'" style="font-size:26px;color:var(--muted);line-height:1">×</button>
+        <div id="loanDetailTitle" style="font-size:18px;font-weight:800"></div>
+      </div>
+      <div id="loanDetailContent"></div>
+    </div>
+  </div>
+
+</div>
+
 <!-- ══ BOTTOM NAV ══ -->
 <nav class="bottom-nav">
   <button class="nav-btn" onclick="switchPage('tasks',this)">
@@ -502,14 +551,51 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
     <div class="nav-icon-wrap"><span class="nav-icon">💰</span></div>
     <span class="nav-label">תקציב</span>
   </button>
-  <button class="nav-btn" onclick="switchPage('kids',this)">
-    <div class="nav-icon-wrap"><span class="nav-icon">👶</span></div>
-    <span class="nav-label">ילדים</span>
+  <button class="nav-btn" onclick="switchPage('loans',this)">
+    <div class="nav-icon-wrap"><span class="nav-icon">🏦</span></div>
+    <span class="nav-label">הלוואות</span>
   </button>
 </nav>
 
 <button type="button" class="fab" id="fab" onclick="openSheet()">+</button>
 <div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSheet()"></div>
+
+<!-- LOAN SHEET -->
+<div class="sheet" id="loanSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button class="sheet-close" onclick="closeSheet()">×</button>
+    <div class="sheet-title" id="loanSheetTitle">הלוואה חדשה</div>
+  </div>
+  <div class="field-label">שם ההלוואה</div>
+  <input class="input-field" id="loanName" placeholder="למשל: משכנתא דירה, הלוואת רכב...">
+  <div class="field-label">סוג</div>
+  <select class="select-field" id="loanType">
+    <option value="משכנתא">🏠 משכנתא</option>
+    <option value="רכב">🚗 הלוואת רכב</option>
+    <option value="אישית">💳 הלוואה אישית</option>
+    <option value="עסקית">💼 הלוואה עסקית</option>
+    <option value="אחר">📦 אחר</option>
+  </select>
+  <div class="field-label">בנק / גוף מלווה</div>
+  <input class="input-field" id="loanBank" placeholder="למשל: מזרחי טפחות, דיסקונט...">
+  <div class="form-row">
+    <div><div class="field-label">סכום מקורי (₪)</div><input class="input-field" type="number" id="loanOriginal" placeholder="0"></div>
+    <div><div class="field-label">יתרה נוכחית (₪)</div><input class="input-field" type="number" id="loanBalance" placeholder="0"></div>
+  </div>
+  <div class="form-row">
+    <div><div class="field-label">תשלום חודשי (₪)</div><input class="input-field" type="number" id="loanMonthly" placeholder="0"></div>
+    <div><div class="field-label">ריבית (%)</div><input class="input-field" type="number" id="loanRate" placeholder="0.0" step="0.1"></div>
+  </div>
+  <div class="form-row">
+    <div><div class="field-label">תאריך תחילה</div><input class="input-field" type="date" id="loanStartDate"></div>
+    <div><div class="field-label">תאריך תשלום הבא</div><input class="input-field" type="date" id="loanNextDate"></div>
+  </div>
+  <div class="field-label">הערות</div>
+  <input class="input-field" id="loanNotes" placeholder="מסלול, תנאים מיוחדים...">
+  <button class="btn-submit" id="loanSubmitBtn" onclick="saveLoan()">הוסף הלוואה</button>
+  <button class="btn-delete" id="loanDeleteBtn" style="display:none" onclick="deleteEditLoan()">🗑️ מחק הלוואה</button>
+</div>
 
 <!-- TASK SHEET -->
 <div class="sheet" id="taskSheet">
@@ -763,6 +849,7 @@ window.openSheet=()=>{
   else if(currentPage==='calendar')sid='calSheet';
   else if(currentPage==='kids')sid='kidsSheet';
   else if(currentPage==='budget')sid='expenseSheet';
+  else if(currentPage==='loans')sid='loanSheet';
   if(currentPage==='tasks'){
     document.getElementById('taskSheetTitle').textContent='משימה חדשה';
     document.getElementById('taskTitle').value='';document.getElementById('taskDue').value='';
@@ -778,6 +865,13 @@ window.openSheet=()=>{
     document.getElementById('calSubmitBtn').textContent='הוסף אירוע';
     document.getElementById('calDeleteBtn').style.display='none';
     selectedEmoji='🗓️';selectedColor='#7C3D6E';renderEmojiPicker();renderColorPicker();
+  }
+  if(currentPage==='loans'){
+    editingLoanId=null;
+    document.getElementById('loanSheetTitle').textContent='הלוואה חדשה';
+    ['loanName','loanBank','loanOriginal','loanBalance','loanMonthly','loanRate','loanStartDate','loanNextDate','loanNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    document.getElementById('loanSubmitBtn').textContent='הוסף הלוואה';
+    document.getElementById('loanDeleteBtn').style.display='none';
   }
   if(currentPage==='budget'){
     editingExpenseId=null;
@@ -1076,7 +1170,281 @@ window.saveKidAppt=async()=>{
 };
 window.deleteEditKid=async()=>{if(!editingKidId)return;if(confirm('למחוק תור?')){await deleteDoc(doc(db,'kids',editingKidId));closeSheet();}};
 
-// ══ CREDIT IMPORT ══
+// ══ LOANS MODULE ══
+let loans=[];
+let editingLoanId=null;
+
+const LOAN_TYPE_EMOJI={משכנתא:'🏠',רכב:'🚗',אישית:'💳',עסקית:'💼',אחר:'📦'};
+
+function renderLoans(){
+  const totalBalance=loans.reduce((s,l)=>s+Number(l.balance||0),0);
+  const totalMonthly=loans.reduce((s,l)=>s+Number(l.monthly||0),0);
+  const active=loans.filter(l=>Number(l.balance||0)>0);
+
+  // Next payment date
+  const upcoming=loans
+    .filter(l=>l.nextDate)
+    .sort((a,b)=>a.nextDate.localeCompare(b.nextDate))[0];
+
+  const el=id=>document.getElementById(id);
+  if(el('loanTotalBalance'))el('loanTotalBalance').textContent=fmt(totalBalance);
+  if(el('loanMonthlyTotal'))el('loanMonthlyTotal').textContent=fmt(totalMonthly);
+  if(el('loanActiveCount'))el('loanActiveCount').textContent=active.length;
+  if(el('loanNextPayment')&&upcoming){
+    const d=new Date(upcoming.nextDate);
+    el('loanNextPayment').textContent=d.getDate()+' '+HEB_MONTHS_FULL[d.getMonth()]+' '+d.getFullYear();
+  }
+
+  const listEl=el('loansList');
+  if(!listEl)return;
+  if(!loans.length){
+    listEl.innerHTML='<div class="empty-state"><span class="empty-icon">🏦</span>אין הלוואות עדיין<br><span style="font-size:13px;color:var(--muted)">לחץ + כדי להוסיף</span></div>';
+    return;
+  }
+
+  listEl.innerHTML=loans.map(loan=>{
+    const balance=Number(loan.balance||0);
+    const original=Number(loan.original||0);
+    const monthly=Number(loan.monthly||0);
+    const pct=original?Math.round((1-balance/original)*100):0;
+    const monthsLeft=monthly?Math.round(balance/monthly):0;
+    const emoji=LOAN_TYPE_EMOJI[loan.type]||'📦';
+    const nextD=loan.nextDate?new Date(loan.nextDate):null;
+    const nextStr=nextD?nextD.getDate()+' '+HEB_MONTHS_FULL[nextD.getMonth()]+' '+nextD.getFullYear():'—';
+
+    return `<div style="background:var(--card);border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.06)" onclick="openLoanDetail('${loan.id}')">
+      <!-- Loan Header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div>
+          <div style="font-size:22px;font-weight:800;color:var(--plum)">${fmt(balance)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">יתרה כוללת</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:16px;font-weight:800;display:flex;align-items:center;gap:6px;justify-content:flex-end">
+            ${loan.name} <span style="font-size:20px">${emoji}</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${loan.bank||''} ${loan.type?'• '+loan.type:''}</div>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div style="background:var(--border);border-radius:6px;height:6px;margin-bottom:10px;overflow:hidden">
+        <div style="width:${pct}%;background:${pct>80?'var(--sage)':'var(--rose)'};height:100%;border-radius:6px;transition:width .5s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+        <span style="font-size:11px;color:var(--muted)">מתוך ${fmt(original)}</span>
+        <span style="font-size:11px;color:var(--muted)">${pct}% שולם</span>
+      </div>
+
+      <!-- Tracks (for mortgages with notes) -->
+      ${loan.notes?`<div style="font-size:12px;color:var(--muted);margin-bottom:10px;text-align:right">${loan.notes}</div>`:''}
+
+      <!-- Footer -->
+      <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;gap:16px">
+          <div style="text-align:center">
+            <div style="font-size:13px;font-weight:700">${fmt(monthly)}</div>
+            <div style="font-size:10px;color:var(--muted)">חודשי</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:13px;font-weight:700">${monthsLeft}</div>
+            <div style="font-size:10px;color:var(--muted)">חודשים נותרו</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--muted)">תשלום הבא</div>
+          <div style="font-size:13px;font-weight:700">${nextStr}</div>
+        </div>
+      </div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button onclick="markLoanPaidOff('${loan.id}','${loan.name.replace(/'/g,"\\'")}');event.stopPropagation()" style="flex:1;padding:13px;border-radius:14px;background:#e8f7ef;color:var(--sage);font-weight:700;font-size:14px">✅ שולם במלואו</button>
+      <button onclick="editLoan('${loan.id}');document.getElementById('loanDetailModal').style.display='none';event.stopPropagation()" style="flex:1;padding:13px;border-radius:14px;background:var(--plum-light);color:var(--plum);font-weight:700;font-size:14px">✏️ עריכה</button>
+      <button onclick="confirmDeleteLoan('${loan.id}');event.stopPropagation()" style="padding:13px 16px;border-radius:14px;background:#fde8e8;color:var(--rose);font-size:18px">🗑️</button>
+    </div>
+    </div>`;
+  }).join('');
+}
+
+window.openLoanDetail=id=>{
+  const loan=loans.find(x=>x.id===id);if(!loan)return;
+  const balance=Number(loan.balance||0);
+  const original=Number(loan.original||0);
+  const monthly=Number(loan.monthly||0);
+  const rate=Number(loan.rate||0);
+  const monthsLeft=monthly?Math.round(balance/monthly):0;
+  const yearsLeft=Math.floor(monthsLeft/12);
+  const remainMonths=monthsLeft%12;
+  const paidAmt=original-balance;
+  const pct=original?Math.round(paidAmt/original*100):0;
+
+  // Generate payment schedule (next 12 months)
+  const schedule=[];
+  let rem=balance;
+  const today=new Date();
+  for(let i=0;i<Math.min(monthsLeft,24);i++){
+    const interest=rate?rem*(rate/100/12):0;
+    const principal=Math.max(0,monthly-interest);
+    rem=Math.max(0,rem-principal);
+    const d=new Date(today.getFullYear(),today.getMonth()+i+1,1);
+    schedule.push({month:d.getDate()+' '+HEB_MONTHS_FULL[d.getMonth()]+' '+d.getFullYear(),payment:monthly,interest:Math.round(interest),principal:Math.round(principal),remaining:Math.round(rem)});
+  }
+
+  document.getElementById('loanDetailTitle').textContent=loan.name;
+  document.getElementById('loanDetailContent').innerHTML=`
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div style="background:var(--bg);border-radius:14px;padding:12px;text-align:center">
+        <div style="font-size:18px;font-weight:800;color:var(--plum)">${fmt(balance)}</div>
+        <div style="font-size:11px;color:var(--muted)">יתרה נוכחית</div>
+      </div>
+      <div style="background:var(--bg);border-radius:14px;padding:12px;text-align:center">
+        <div style="font-size:18px;font-weight:800;color:var(--sage)">${fmt(paidAmt)}</div>
+        <div style="font-size:11px;color:var(--muted)">שולם עד כה</div>
+      </div>
+      <div style="background:var(--bg);border-radius:14px;padding:12px;text-align:center">
+        <div style="font-size:18px;font-weight:800">${yearsLeft>0?yearsLeft+' שנים ':''} ${remainMonths} חודשים</div>
+        <div style="font-size:11px;color:var(--muted)">נותרו</div>
+      </div>
+      <div style="background:var(--bg);border-radius:14px;padding:12px;text-align:center">
+        <div style="font-size:18px;font-weight:800">${pct}%</div>
+        <div style="font-size:11px;color:var(--muted)">הושלם</div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div style="background:var(--border);border-radius:8px;height:10px;margin-bottom:16px;overflow:hidden">
+      <div style="width:${pct}%;background:var(--sage);height:100%;border-radius:8px"></div>
+    </div>
+
+    <!-- Payment Schedule -->
+    ${schedule.length?`
+    <div style="font-size:14px;font-weight:800;margin-bottom:10px;text-align:right">לוח תשלומים קרוב</div>
+    <div style="max-height:280px;overflow-y:auto;border-radius:12px;border:1.5px solid var(--border)">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:0;font-size:10px;font-weight:700;color:var(--muted);padding:8px 10px;background:var(--bg);border-bottom:1px solid var(--border);direction:rtl">
+        <span>חודש</span><span style="text-align:center">תשלום</span><span style="text-align:center">ריבית</span><span style="text-align:left">יתרה</span>
+      </div>
+      ${schedule.map((s,i)=>`
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:0;padding:8px 10px;border-bottom:${i<schedule.length-1?'1px solid var(--border)':'none'};background:${i===0?'var(--plum-light)':'#fff'};direction:rtl">
+          <span style="font-size:11px;font-weight:${i===0?700:400}">${s.month}</span>
+          <span style="font-size:11px;text-align:center;color:var(--plum);font-weight:700">${fmt(s.payment)}</span>
+          <span style="font-size:11px;text-align:center;color:var(--rose)">${fmt(s.interest)}</span>
+          <span style="font-size:11px;text-align:left;color:var(--muted)">${fmt(s.remaining)}</span>
+        </div>`).join('')}
+    </div>`:
+    '<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">הזן ריבית ותשלום חודשי כדי לראות לוח תשלומים</div>'}
+  `;
+
+  document.getElementById('loanDetailModal').style.display='flex';
+};
+
+// Auto-update loan balances monthly (runs on app open)
+async function autoUpdateLoans(){
+  const today=new Date();
+  const todayDay=today.getDate();
+  if(todayDay<15)return; // Only process on/after the 15th
+
+  for(const loan of loans){
+    if(!loan.monthly||!loan.nextDate)continue;
+    const next=new Date(loan.nextDate);
+    if(today<next)continue; // Not due yet
+
+    const balance=Number(loan.balance||0);
+    const monthly=Number(loan.monthly||0);
+    if(balance<=0)continue; // Already paid off
+
+    const newBalance=Math.max(0,balance-monthly);
+
+    // Calculate next payment date (advance by 1 month)
+    const newNextDate=new Date(next);
+    newNextDate.setMonth(newNextDate.getMonth()+1);
+    const newNextStr=newNextDate.toISOString().slice(0,10);
+
+    await updateDoc(doc(db,'loans',loan.id),{
+      balance:newBalance,
+      nextDate:newNextStr,
+      lastUpdated:today.toISOString().slice(0,10)
+    });
+
+    // Also add as expense entry
+    if(newBalance>0){
+      await addDoc(collection(db,'expenses'),{
+        amount:monthly,
+        date:today.toISOString().slice(0,10),
+        category:'🏦',
+        description:'תשלום הלוואה: '+loan.name,
+        paidBy:myName,
+        paymentMethod:'העברה בנקאית',
+        notes:'עדכון אוטומטי',
+        createdAt:Date.now()
+      });
+    }
+
+    toast('📅 יתרת "'+loan.name+'" עודכנה אוטומטית!');
+  }
+}
+
+window.saveLoan=async()=>{
+  const name=document.getElementById('loanName').value.trim();
+  if(!name)return;
+  const data={
+    name,
+    type:document.getElementById('loanType').value,
+    bank:document.getElementById('loanBank').value,
+    original:Number(document.getElementById('loanOriginal').value)||0,
+    balance:Number(document.getElementById('loanBalance').value)||0,
+    monthly:Number(document.getElementById('loanMonthly').value)||0,
+    rate:Number(document.getElementById('loanRate').value)||0,
+    startDate:document.getElementById('loanStartDate').value,
+    nextDate:document.getElementById('loanNextDate').value,
+    notes:document.getElementById('loanNotes').value,
+  };
+  if(editingLoanId){
+    await updateDoc(doc(db,'loans',editingLoanId),data);
+    closeSheet();toast('🏦 הלוואה עודכנה!');
+  }else{
+    await addDoc(collection(db,'loans'),{...data,createdAt:Date.now()});
+    closeSheet();toast('🏦 הלוואה נוספה!');
+  }
+};
+
+window.editLoan=id=>{
+  const l=loans.find(x=>x.id===id);if(!l)return;
+  editingLoanId=id;
+  document.getElementById('loanSheetTitle').textContent='עריכת הלוואה';
+  document.getElementById('loanName').value=l.name||'';
+  document.getElementById('loanType').value=l.type||'אחר';
+  document.getElementById('loanBank').value=l.bank||'';
+  document.getElementById('loanOriginal').value=l.original||'';
+  document.getElementById('loanBalance').value=l.balance||'';
+  document.getElementById('loanMonthly').value=l.monthly||'';
+  document.getElementById('loanRate').value=l.rate||'';
+  document.getElementById('loanStartDate').value=l.startDate||'';
+  document.getElementById('loanNextDate').value=l.nextDate||'';
+  document.getElementById('loanNotes').value=l.notes||'';
+  document.getElementById('loanSubmitBtn').textContent='שמור שינויים';
+  document.getElementById('loanDeleteBtn').style.display='block';
+  activeSheet=document.getElementById('loanSheet');
+  document.getElementById('sheetBackdrop').classList.add('open');activeSheet.classList.add('open');
+};
+
+window.markLoanPaidOff=async(id,name)=>{
+  if(!confirm('לסמן את "'+name+'" כשולמה במלואה?\n\nההלוואה תימחק מהרשימה הפעילה.'))return;
+  document.getElementById('loanDetailModal').style.display='none';
+  await deleteDoc(doc(db,'loans',id));
+  toast('🎉 כל הכבוד! ההלוואה "'+name+'" שולמה במלואה!');
+};
+
+window.confirmDeleteLoan=id=>{
+  const l=loans.find(x=>x.id===id);if(!l)return;
+  if(confirm('למחוק את "'+l.name+'"?'))deleteDoc(doc(db,'loans',id));
+};
+
+window.deleteEditLoan=async()=>{
+  if(!editingLoanId)return;
+  if(confirm('למחוק הלוואה?')){await deleteDoc(doc(db,'loans',editingLoanId));closeSheet();toast('🗑️ נמחק');}
+};
 let pendingImportRows=[];
 
 // Auto-categorize by merchant name
@@ -1792,6 +2160,15 @@ function initListeners(){
   onSnapshot(collection(db,'events'),snap=>{events=snap.docs.map(d=>({id:d.id,...d.data()}));renderCalendar();});
   onSnapshot(collection(db,'kids'),snap=>{kids=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));renderKids();});
   onSnapshot(collection(db,'expenses'),snap=>{expenses=snap.docs.map(d=>({id:d.id,...d.data()}));renderBudget();});
+  onSnapshot(collection(db,'loans'),snap=>{
+    loans=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.balance||0)-(a.balance||0));
+    renderLoans();
+    // Auto-update on first load
+    if(!window._loansAutoUpdated){
+      window._loansAutoUpdated=true;
+      setTimeout(autoUpdateLoans,2000); // slight delay to ensure data is ready
+    }
+  });
   getDoc(doc(db,'settings','budget')).then(s=>{if(s.exists())budgetSettings=s.data();renderBudget();}).catch(()=>{});
 }
 
