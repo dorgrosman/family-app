@@ -377,11 +377,21 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   </div>
 
   <!-- Savings Banner -->
-  <div onclick="switchPage('savings')" style="background:linear-gradient(135deg,#4A7C6F,#2d5c52);border-radius:20px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(74,124,111,.3)">
+  <div onclick="switchPage('savings')" style="background:linear-gradient(135deg,#4A7C6F,#2d5c52);border-radius:20px;padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(74,124,111,.3)">
     <div style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🐷</div>
     <div style="flex:1">
       <div style="font-size:15px;font-weight:800;color:#fff">חסכונות</div>
       <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px" id="savingsBannerSub">מעקב חסכונות ויעדים</div>
+    </div>
+    <div style="color:rgba(255,255,255,.6);font-size:20px">‹</div>
+  </div>
+
+  <!-- Recurring Expenses Banner -->
+  <div onclick="switchPage('recurring')" style="background:linear-gradient(135deg,#E8736A,#c4443c);border-radius:20px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(232,115,106,.3)">
+    <div style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🔄</div>
+    <div style="flex:1">
+      <div style="font-size:15px;font-weight:800;color:#fff">הוצאות קבועות</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px" id="recurringBannerSub">מנויים, חוגים, תשלומים קבועים</div>
     </div>
     <div style="color:rgba(255,255,255,.6);font-size:20px">‹</div>
   </div>
@@ -587,6 +597,74 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   <div id="savingsList"></div>
 </div>
 
+<!-- ══ RECURRING EXPENSES PAGE ══ -->
+<div class="page" id="page-recurring">
+  <div style="text-align:right;margin-bottom:20px;padding-top:calc(var(--safe-top) + 4px)">
+    <div style="font-size:24px;font-weight:800;color:var(--text)">הוצאות קבועות 🔄</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:2px">מנויים, חוגים ותשלומים חודשיים</div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid" style="margin-bottom:20px">
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">💸</div>
+      <div style="font-size:20px;font-weight:800;color:var(--rose)" id="recurringMonthlyTotal">₪0</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">סה"כ חודשי</div>
+    </div>
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">📋</div>
+      <div style="font-size:20px;font-weight:800;color:var(--text)" id="recurringCount">0</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">הוצאות פעילות</div>
+    </div>
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">📅</div>
+      <div style="font-size:18px;font-weight:800;color:var(--text)" id="recurringNextDate">—</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">תשלום הבא</div>
+    </div>
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">📆</div>
+      <div style="font-size:20px;font-weight:800;color:var(--text)" id="recurringYearTotal">₪0</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">סה"כ שנתי</div>
+    </div>
+  </div>
+
+  <div id="recurringList"></div>
+</div>
+
+<!-- ══ RECURRING EXPENSES PAGE ══ -->
+<div class="page" id="page-recurring">
+  <div style="text-align:right;margin-bottom:20px;padding-top:calc(var(--safe-top) + 4px)">
+    <div style="font-size:24px;font-weight:800;color:var(--text)">הוצאות קבועות 🔄</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:2px">גן, חוגים, מנויים ותשלומים קבועים</div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid" style="margin-bottom:20px">
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">📅</div>
+      <div style="font-size:20px;font-weight:800;color:var(--text)" id="recurringMonthly">₪0</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">סה"כ חודשי</div>
+    </div>
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">📆</div>
+      <div style="font-size:20px;font-weight:800;color:var(--text)" id="recurringYearly">₪0</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">סה"כ שנתי</div>
+    </div>
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">✅</div>
+      <div style="font-size:20px;font-weight:800;color:var(--sage)" id="recurringActive">0</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">פעילות</div>
+    </div>
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">⏰</div>
+      <div style="font-size:18px;font-weight:800;color:var(--text)" id="recurringNext">—</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">הבא לתשלום</div>
+    </div>
+  </div>
+
+  <div id="recurringList"></div>
+</div>
+
 <!-- ══ BOTTOM NAV ══ -->
 <nav class="bottom-nav">
   <button class="nav-btn" onclick="switchPage('tasks',this)">
@@ -613,6 +691,96 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 
 <button type="button" class="fab" id="fab" onclick="openSheet()">+</button>
 <div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSheet()"></div>
+
+<!-- RECURRING EXPENSE SHEET -->
+<div class="sheet" id="recurringSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button class="sheet-close" onclick="closeSheet()">×</button>
+    <div class="sheet-title" id="recurringSheetTitle">הוצאה קבועה חדשה</div>
+  </div>
+  <div class="field-label">שם ההוצאה</div>
+  <input class="input-field" id="recName" placeholder="למשל: גן ילדים, חוג שחייה, נטפליקס...">
+  <div class="field-label">קטגוריה</div>
+  <select class="select-field" id="recCategory">
+    <option value="👶">👶 גן / צהרון</option>
+    <option value="🎨">🎨 חוגים</option>
+    <option value="📱">📱 מנויים דיגיטליים</option>
+    <option value="🏋️">🏋️ כושר / ספורט</option>
+    <option value="💡">💡 חשבונות</option>
+    <option value="🏦">🏦 ביטוחים</option>
+    <option value="🚗">🚗 רכב</option>
+    <option value="🏠">🏠 בית</option>
+    <option value="📦">📦 אחר</option>
+  </select>
+  <div class="form-row">
+    <div><div class="field-label">סכום (₪)</div><input class="input-field" type="number" id="recAmount" placeholder="0"></div>
+    <div><div class="field-label">יום בחודש</div><input class="input-field" type="number" id="recDay" placeholder="1-28" min="1" max="28"></div>
+  </div>
+  <div class="form-row">
+    <div><div class="field-label">מתאריך</div><input class="input-field" type="date" id="recStartDate"></div>
+    <div><div class="field-label">עד תאריך</div><input class="input-field" type="date" id="recEndDate"></div>
+  </div>
+  <div class="field-label">תדירות</div>
+  <select class="select-field" id="recFrequency">
+    <option value="monthly">חודשי</option>
+    <option value="yearly">שנתי</option>
+    <option value="weekly">שבועי</option>
+    <option value="quarterly">רבעוני</option>
+  </select>
+  <div class="field-label">הערות</div>
+  <input class="input-field" id="recNotes" placeholder="פרטים נוספים...">
+  <button class="btn-submit" style="background:var(--rose)" id="recurringSubmitBtn" onclick="saveRecurring()">הוסף הוצאה קבועה</button>
+  <button class="btn-delete" id="recurringDeleteBtn" style="display:none" onclick="deleteEditRecurring()">🗑️ מחק</button>
+</div>
+
+<!-- RECURRING SHEET -->
+<div class="sheet" id="recurringSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button class="sheet-close" onclick="closeSheet()">×</button>
+    <div class="sheet-title" id="recurringSheetTitle">הוצאה קבועה חדשה</div>
+  </div>
+  <div class="field-label">שם ההוצאה</div>
+  <input class="input-field" id="recName" placeholder="למשל: גן ילדים, חוג כדורגל, נטפליקס...">
+  <div class="field-label">קטגוריה</div>
+  <select class="select-field" id="recCategory">
+    <option value="👶">👶 גן / צהרון</option>
+    <option value="🎯">🎯 חוגים</option>
+    <option value="📺">📺 מנויים (נטפליקס, ספוטיפיי...)</option>
+    <option value="🏋️">🏋️ כושר / ספורט</option>
+    <option value="💡">💡 חשבונות (חשמל, מים, גז)</option>
+    <option value="📱">📱 סלולר / אינטרנט</option>
+    <option value="🏥">🏥 ביטוח / בריאות</option>
+    <option value="🎓">🎓 לימודים</option>
+    <option value="🚗">🚗 רכב / ביטוח</option>
+    <option value="🏠">🏠 בית / ועד בית</option>
+    <option value="📦">📦 אחר</option>
+  </select>
+  <div class="form-row">
+    <div><div class="field-label">סכום (₪)</div><input class="input-field" type="number" id="recAmount" placeholder="0"></div>
+    <div><div class="field-label">תדירות</div>
+      <select class="select-field" id="recFrequency">
+        <option value="monthly">חודשי</option>
+        <option value="yearly">שנתי</option>
+        <option value="quarterly">רבעוני</option>
+        <option value="weekly">שבועי</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div><div class="field-label">יום בחודש לחיוב</div><input class="input-field" type="number" id="recDay" placeholder="1-31" min="1" max="31"></div>
+    <div><div class="field-label">שולם על ידי</div><select class="select-field" id="recPaidBy"></select></div>
+  </div>
+  <div class="form-row">
+    <div><div class="field-label">תאריך התחלה</div><input class="input-field" type="date" id="recStartDate"></div>
+    <div><div class="field-label">תאריך סיום</div><input class="input-field" type="date" id="recEndDate"></div>
+  </div>
+  <div class="field-label">הערות</div>
+  <input class="input-field" id="recNotes" placeholder="הערות נוספות...">
+  <button class="btn-submit" style="background:#5B8ACE" id="recSubmitBtn" onclick="saveRecurring()">הוסף הוצאה קבועה</button>
+  <button class="btn-delete" id="recDeleteBtn" style="display:none" onclick="deleteEditRecurring()">🗑️ מחק הוצאה קבועה</button>
+</div>
 
 <!-- SAVINGS SHEET -->
 <div class="sheet" id="savingsSheet">
@@ -947,6 +1115,8 @@ window.openSheet=()=>{
   else if(currentPage==='budget')sid='expenseSheet';
   else if(currentPage==='loans')sid='loanSheet';
   else if(currentPage==='savings')sid='savingsSheet';
+  else if(currentPage==='recurring')sid='recurringSheet';
+  else if(currentPage==='recurring')sid='recurringSheet';
   if(currentPage==='tasks'){
     document.getElementById('taskSheetTitle').textContent='משימה חדשה';
     document.getElementById('taskTitle').value='';document.getElementById('taskDue').value='';
@@ -962,6 +1132,14 @@ window.openSheet=()=>{
     document.getElementById('calSubmitBtn').textContent='הוסף אירוע';
     document.getElementById('calDeleteBtn').style.display='none';
     selectedEmoji='🗓️';selectedColor='#7C3D6E';renderEmojiPicker();renderColorPicker();
+  }
+  if(currentPage==='recurring'){
+    editingRecurringId=null;
+    document.getElementById('recurringSheetTitle').textContent='הוצאה קבועה חדשה';
+    ['recName','recAmount','recDay','recStartDate','recEndDate','recNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    document.getElementById('recPaidBy').innerHTML='<option>'+myName+'</option><option>'+partnerName+'</option>';
+    document.getElementById('recSubmitBtn').textContent='הוסף הוצאה קבועה';
+    document.getElementById('recDeleteBtn').style.display='none';
   }
   if(currentPage==='savings'){
     editingSavingId=null;
@@ -1457,7 +1635,199 @@ window.openLoanDetail=id=>{
   document.getElementById('loanDetailModal').style.display='flex';
 };
 
-// ══ SAVINGS MODULE ══
+// ══ RECURRING EXPENSES MODULE ══
+let recurring=[];
+let editingRecurringId=null;
+
+const FREQ_LABEL={monthly:'חודשי',yearly:'שנתי',weekly:'שבועי',quarterly:'רבעוני'};
+const FREQ_MONTHS={monthly:1,quarterly:3,yearly:12,weekly:0};
+
+function renderRecurring(){
+  const today=new Date();
+  const todayStr=today.toISOString().slice(0,10);
+
+  // Only active ones (within date range)
+  const active=recurring.filter(r=>{
+    if(r.startDate&&r.startDate>todayStr)return false;
+    if(r.endDate&&r.endDate<todayStr)return false;
+    return true;
+  });
+
+  const monthlyTotal=active.reduce((s,r)=>{
+    const amt=Number(r.amount||0);
+    if(r.frequency==='monthly')return s+amt;
+    if(r.frequency==='quarterly')return s+amt/3;
+    if(r.frequency==='yearly')return s+amt/12;
+    if(r.frequency==='weekly')return s+amt*4.33;
+    return s+amt;
+  },0);
+  const yearlyTotal=monthlyTotal*12;
+
+  // Next payment
+  const upcoming=active
+    .filter(r=>r.day)
+    .map(r=>{
+      const d=new Date(today.getFullYear(),today.getMonth(),Number(r.day));
+      if(d<today)d.setMonth(d.getMonth()+1);
+      return{...r,nextD:d};
+    })
+    .sort((a,b)=>a.nextD-b.nextD)[0];
+
+  const el=id=>document.getElementById(id);
+  if(el('recurringMonthlyTotal'))el('recurringMonthlyTotal').textContent=fmt(monthlyTotal);
+  if(el('recurringYearTotal'))el('recurringYearTotal').textContent=fmt(yearlyTotal);
+  if(el('recurringCount'))el('recurringCount').textContent=active.length;
+  if(el('recurringNextDate')&&upcoming){
+    el('recurringNextDate').textContent=upcoming.nextD.getDate()+' '+HEB_MONTHS_FULL[upcoming.nextD.getMonth()];
+  }
+
+  // Update banner
+  const banner=el('recurringBannerSub');
+  if(banner&&active.length)banner.textContent=active.length+' פעילות • '+fmt(monthlyTotal)+' לחודש';
+
+  const listEl=el('recurringList');
+  if(!listEl)return;
+  if(!recurring.length){
+    listEl.innerHTML='<div class="empty-state"><span class="empty-icon">🔄</span>אין הוצאות קבועות<br><span style="font-size:13px;color:var(--muted)">לחץ + להוספה</span></div>';
+    return;
+  }
+
+  // Group by active/ended
+  const ended=recurring.filter(r=>r.endDate&&r.endDate<todayStr);
+
+  let html='';
+  if(active.length){
+    html+=active.map(r=>recurringCardHTML(r,today)).join('');
+  }
+  if(ended.length){
+    html+=`<div style="font-size:12px;font-weight:700;color:var(--muted);margin:16px 0 8px;text-transform:uppercase">הסתיימו</div>`;
+    html+=ended.map(r=>recurringCardHTML(r,today,true)).join('');
+  }
+  listEl.innerHTML=html;
+}
+
+function recurringCardHTML(r,today,ended=false){
+  const amt=Number(r.amount||0);
+  const nextDay=Number(r.day||1);
+  const nextD=new Date(today.getFullYear(),today.getMonth(),nextDay);
+  if(nextD<today)nextD.setMonth(nextD.getMonth()+1);
+  const daysUntil=Math.round((nextD-today)/(1000*60*60*24));
+  const isUrgent=daysUntil<=5;
+
+  const startStr=r.startDate?new Date(r.startDate).toLocaleDateString('he-IL'):'—';
+  const endStr=r.endDate?new Date(r.endDate).toLocaleDateString('he-IL'):'ללא הגבלה';
+
+  return `<div style="background:var(--card);border-radius:18px;padding:16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.05);opacity:${ended?0.5:1}">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <div style="width:44px;height:44px;border-radius:14px;background:${ended?'var(--border)':'#fde8e8'};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${r.category||'📦'}</div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:700;color:var(--text)">${r.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${FREQ_LABEL[r.frequency]||'חודשי'} • ${startStr} — ${endStr}</div>
+      </div>
+      <div style="text-align:left">
+        <div style="font-size:18px;font-weight:800;color:var(--rose)">${fmt(amt)}</div>
+        <div style="font-size:10px;color:var(--muted);text-align:left">${FREQ_LABEL[r.frequency]||'חודשי'}</div>
+      </div>
+    </div>
+    ${!ended?`<div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid var(--border)">
+      <div style="font-size:12px;color:${isUrgent?'var(--rose)':'var(--muted)'};font-weight:${isUrgent?700:400}">
+        ${isUrgent?'⚠️ ':''}תשלום הבא: ${nextD.getDate()}/${nextD.getMonth()+1} (עוד ${daysUntil} ימים)
+      </div>
+      <div style="display:flex;gap:6px">
+        <button onclick="editRecurring('${r.id}')" style="font-size:15px;padding:4px 8px;border-radius:8px;background:var(--bg)">✏️</button>
+        <button onclick="confirmDeleteRecurring('${r.id}')" style="font-size:15px;padding:4px 8px;border-radius:8px;background:var(--bg)">🗑️</button>
+      </div>
+    </div>`:`<div style="display:flex;justify-content:flex-end">
+      <button onclick="confirmDeleteRecurring('${r.id}')" style="font-size:13px;padding:4px 10px;border-radius:8px;background:var(--bg);color:var(--muted)">🗑️ מחק</button>
+    </div>`}
+    ${r.notes?`<div style="font-size:12px;color:var(--muted);margin-top:8px">${r.notes}</div>`:''}
+  </div>`;
+}
+
+// Auto-charge recurring expenses monthly
+async function autoChargeRecurring(){
+  const today=new Date();
+  const todayDay=today.getDate();
+  const thisMonth=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
+  const todayStr=today.toISOString().slice(0,10);
+
+  for(const r of recurring){
+    if(!r.amount||!r.day)continue;
+    if(r.startDate&&r.startDate>todayStr)continue;
+    if(r.endDate&&r.endDate<todayStr)continue;
+    if(Number(r.day)!==todayDay)continue; // only on the exact day
+    if(r.frequency!=='monthly')continue; // only handle monthly for now
+    if((r.lastCharged||'')===thisMonth)continue; // already charged
+
+    // Add as expense
+    await addDoc(collection(db,'expenses'),{
+      amount:Number(r.amount),
+      date:todayStr,
+      category:r.category||'📦',
+      description:r.name,
+      paidBy:myName,
+      paymentMethod:'הוראת קבע',
+      notes:'הוצאה קבועה אוטומטית',
+      createdAt:Date.now()
+    });
+
+    // Mark as charged this month
+    await updateDoc(doc(db,'recurring',r.id),{lastCharged:thisMonth});
+
+    toast('🔄 "'+r.name+'" נרשם אוטומטית: '+fmt(r.amount));
+    sendPushToOthers('🔄 הוצאה קבועה',''+r.name+' — '+fmt(r.amount));
+  }
+}
+
+window.saveRecurring=async()=>{
+  const name=document.getElementById('recName').value.trim();
+  if(!name)return;
+  const data={
+    name,
+    category:document.getElementById('recCategory').value,
+    amount:Number(document.getElementById('recAmount').value)||0,
+    day:Number(document.getElementById('recDay').value)||1,
+    startDate:document.getElementById('recStartDate').value,
+    endDate:document.getElementById('recEndDate').value,
+    frequency:document.getElementById('recFrequency').value,
+    notes:document.getElementById('recNotes').value,
+  };
+  if(editingRecurringId){
+    await updateDoc(doc(db,'recurring',editingRecurringId),data);
+    closeSheet();toast('🔄 עודכן!');
+  }else{
+    await addDoc(collection(db,'recurring'),{...data,createdAt:Date.now()});
+    closeSheet();toast('🔄 נוסף!');
+  }
+};
+
+window.editRecurring=id=>{
+  const r=recurring.find(x=>x.id===id);if(!r)return;
+  editingRecurringId=id;
+  document.getElementById('recurringSheetTitle').textContent='עריכת הוצאה קבועה';
+  document.getElementById('recName').value=r.name||'';
+  document.getElementById('recCategory').value=r.category||'📦';
+  document.getElementById('recAmount').value=r.amount||'';
+  document.getElementById('recDay').value=r.day||'';
+  document.getElementById('recStartDate').value=r.startDate||'';
+  document.getElementById('recEndDate').value=r.endDate||'';
+  document.getElementById('recFrequency').value=r.frequency||'monthly';
+  document.getElementById('recNotes').value=r.notes||'';
+  document.getElementById('recurringSubmitBtn').textContent='שמור שינויים';
+  document.getElementById('recurringDeleteBtn').style.display='block';
+  activeSheet=document.getElementById('recurringSheet');
+  document.getElementById('sheetBackdrop').classList.add('open');activeSheet.classList.add('open');
+};
+
+window.confirmDeleteRecurring=id=>{
+  const r=recurring.find(x=>x.id===id);if(!r)return;
+  if(confirm('למחוק "'+r.name+'"?'))deleteDoc(doc(db,'recurring',id));
+};
+
+window.deleteEditRecurring=async()=>{
+  if(!editingRecurringId)return;
+  if(confirm('למחוק?')){await deleteDoc(doc(db,'recurring',editingRecurringId));closeSheet();toast('🗑️ נמחק');}
+};
 let savings=[];
 let editingSavingId=null;
 
@@ -1617,7 +1987,203 @@ window.deleteEditSaving=async()=>{
   if(confirm('למחוק חיסכון?')){await deleteDoc(doc(db,'savings',editingSavingId));closeSheet();toast('🗑️ נמחק');}
 }; // runs on app open
 
-// Auto-update savings balances monthly
+// ══ RECURRING EXPENSES MODULE ══
+let recurringItems=[];
+let editingRecurringId=null;
+
+const FREQ_LABEL={monthly:'חודשי',yearly:'שנתי',quarterly:'רבעוני',weekly:'שבועי'};
+const FREQ_MONTHS={monthly:1,quarterly:3,yearly:12,weekly:0.25};
+
+function getRecurringMonthlyAmount(item){
+  const amt=Number(item.amount||0);
+  const freq=item.frequency||'monthly';
+  if(freq==='monthly')return amt;
+  if(freq==='yearly')return amt/12;
+  if(freq==='quarterly')return amt/3;
+  if(freq==='weekly')return amt*4.33;
+  return amt;
+}
+
+function renderRecurring(){
+  const today=new Date();
+  const todayStr=today.toISOString().slice(0,10);
+
+  // Only active items (startDate <= today <= endDate or no endDate)
+  const active=recurringItems.filter(r=>{
+    const start=r.startDate||'';
+    const end=r.endDate||'9999-12-31';
+    return (!start||start<=todayStr)&&todayStr<=end;
+  });
+
+  const totalMonthly=active.reduce((s,r)=>s+getRecurringMonthlyAmount(r),0);
+  const totalYearly=totalMonthly*12;
+
+  // Next payment
+  const upcoming=[...active].sort((a,b)=>{
+    const dayA=Number(a.chargeDay||1),dayB=Number(b.chargeDay||1);
+    const todayDay=today.getDate();
+    const daysA=dayA>=todayDay?dayA-todayDay:31-todayDay+dayA;
+    const daysB=dayB>=todayDay?dayB-todayDay:31-todayDay+dayB;
+    return daysA-daysB;
+  })[0];
+
+  const el=id=>document.getElementById(id);
+  if(el('recurringMonthly'))el('recurringMonthly').textContent=fmt(totalMonthly);
+  if(el('recurringYearly'))el('recurringYearly').textContent=fmt(totalYearly);
+  if(el('recurringActive'))el('recurringActive').textContent=active.length;
+  if(el('recurringNext')&&upcoming){
+    const day=Number(upcoming.chargeDay||1);
+    el('recurringNext').textContent=day+' לחודש';
+  }
+
+  // Update banner
+  const banner=el('recurringBannerSub');
+  if(banner&&active.length){
+    banner.textContent=active.length+' הוצאות • '+fmt(totalMonthly)+' לחודש';
+  }
+
+  const listEl=el('recurringList');
+  if(!listEl)return;
+  if(!recurringItems.length){
+    listEl.innerHTML='<div class="empty-state"><span class="empty-icon">🔄</span>אין הוצאות קבועות עדיין<br><span style="font-size:13px;color:var(--muted)">לחץ + כדי להוסיף</span></div>';
+    return;
+  }
+
+  // Group by active/ended
+  const ended=recurringItems.filter(r=>(r.endDate||'9999-12-31')<todayStr);
+
+  let html='';
+  if(active.length){
+    html+=`<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;text-align:right">פעילות · ${active.length}</div>`;
+    html+=active.map(r=>recurringCardHTML(r,true)).join('');
+  }
+  if(ended.length){
+    html+=`<div style="font-size:12px;font-weight:700;color:var(--muted);margin:16px 0 10px;text-align:right">הסתיימו · ${ended.length}</div>`;
+    html+=ended.map(r=>recurringCardHTML(r,false)).join('');
+  }
+  listEl.innerHTML=html;
+}
+
+function recurringCardHTML(r,isActive){
+  const monthly=getRecurringMonthlyAmount(r);
+  const day=r.chargeDay||1;
+  const today=new Date().getDate();
+  const daysUntil=Number(day)>=today?Number(day)-today:31-today+Number(day);
+  const isThisWeek=daysUntil<=7;
+
+  return `<div style="background:var(--card);border-radius:18px;padding:16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.05);opacity:${isActive?1:0.5}">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:44px;height:44px;border-radius:14px;background:${isActive?'#EBF3FF':'var(--bg)'};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${r.category||'🔄'}</div>
+      <div style="flex:1;min-width:0;text-align:right">
+        <div style="font-size:15px;font-weight:700">${r.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px;display:flex;gap:6px;justify-content:flex-end;align-items:center">
+          <span>${FREQ_LABEL[r.frequency||'monthly']}</span>
+          <span>•</span>
+          <span>יום ${day} לחודש</span>
+          ${r.endDate?`<span>• עד ${r.endDate.slice(0,7).replace('-','/')}</span>`:''}
+        </div>
+        ${r.notes?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${r.notes}</div>`:''}
+      </div>
+      <div style="text-align:left;flex-shrink:0">
+        <div style="font-size:17px;font-weight:800;color:#5B8ACE">${fmt(r.amount)}</div>
+        <div style="font-size:10px;color:var(--muted);text-align:left">${FREQ_LABEL[r.frequency||'monthly']}</div>
+        ${r.frequency!=='monthly'?`<div style="font-size:10px;color:var(--muted);text-align:left">${fmt(monthly)}/חודש</div>`:''}
+      </div>
+    </div>
+    ${isActive&&isThisWeek?`<div style="margin-top:10px;background:#FFF3E8;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;color:#E8A030;text-align:right">⏰ ${daysUntil===0?'היום!':daysUntil===1?'מחר!':daysUntil+' ימים לחיוב'}</div>`:''}
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button onclick="editRecurring('${r.id}')" style="flex:1;padding:9px;border-radius:12px;background:#EBF3FF;color:#5B8ACE;font-weight:700;font-size:13px">✏️ עריכה</button>
+      <button onclick="confirmDeleteRecurring('${r.id}')" style="padding:9px 14px;border-radius:12px;background:#fde8e8;color:var(--rose);font-size:16px">🗑️</button>
+    </div>
+  </div>`;
+}
+
+window.saveRecurring=async()=>{
+  const name=document.getElementById('recName').value.trim();
+  if(!name)return;
+  const data={
+    name,
+    category:document.getElementById('recCategory').value,
+    amount:Number(document.getElementById('recAmount').value)||0,
+    frequency:document.getElementById('recFrequency').value,
+    chargeDay:Number(document.getElementById('recDay').value)||1,
+    paidBy:document.getElementById('recPaidBy').value,
+    startDate:document.getElementById('recStartDate').value,
+    endDate:document.getElementById('recEndDate').value,
+    notes:document.getElementById('recNotes').value,
+  };
+  if(editingRecurringId){
+    await updateDoc(doc(db,'recurring',editingRecurringId),data);
+    closeSheet();toast('🔄 עודכן!');
+  }else{
+    await addDoc(collection(db,'recurring'),{...data,createdAt:Date.now()});
+    closeSheet();toast('🔄 נוסף!');
+  }
+};
+
+window.editRecurring=id=>{
+  const r=recurringItems.find(x=>x.id===id);if(!r)return;
+  editingRecurringId=id;
+  document.getElementById('recurringSheetTitle').textContent='עריכת הוצאה קבועה';
+  document.getElementById('recName').value=r.name||'';
+  document.getElementById('recCategory').value=r.category||'📦';
+  document.getElementById('recAmount').value=r.amount||'';
+  document.getElementById('recFrequency').value=r.frequency||'monthly';
+  document.getElementById('recDay').value=r.chargeDay||'';
+  document.getElementById('recPaidBy').value=r.paidBy||myName;
+  document.getElementById('recStartDate').value=r.startDate||'';
+  document.getElementById('recEndDate').value=r.endDate||'';
+  document.getElementById('recNotes').value=r.notes||'';
+  document.getElementById('recSubmitBtn').textContent='שמור שינויים';
+  document.getElementById('recDeleteBtn').style.display='block';
+  activeSheet=document.getElementById('recurringSheet');
+  document.getElementById('sheetBackdrop').classList.add('open');activeSheet.classList.add('open');
+};
+
+window.confirmDeleteRecurring=id=>{
+  const r=recurringItems.find(x=>x.id===id);if(!r)return;
+  if(confirm('למחוק "'+r.name+'"?'))deleteDoc(doc(db,'recurring',id));
+};
+
+window.deleteEditRecurring=async()=>{
+  if(!editingRecurringId)return;
+  if(confirm('למחוק?')){await deleteDoc(doc(db,'recurring',editingRecurringId));closeSheet();toast('🗑️ נמחק');}
+};
+
+// Auto-add recurring expenses to expense tracker monthly
+async function autoAddRecurringExpenses(){
+  const today=new Date();
+  const todayStr=today.toISOString().slice(0,10);
+  const thisMonth=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
+
+  for(const r of recurringItems){
+    if(!r.amount)continue;
+    const start=r.startDate||'';
+    const end=r.endDate||'9999-12-31';
+    if(start>todayStr||todayStr>end)continue; // not active
+
+    const chargeDay=Number(r.chargeDay||1);
+    if(today.getDate()<chargeDay)continue; // not yet this month
+
+    const lastAdded=r.lastAutoAdded||'';
+    if(lastAdded===thisMonth)continue; // already added this month
+
+    // Add to expenses
+    await addDoc(collection(db,'expenses'),{
+      amount:Number(r.amount),
+      date:today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(chargeDay).padStart(2,'0'),
+      category:r.category||'📦',
+      description:r.name,
+      paidBy:r.paidBy||myName,
+      paymentMethod:'הוראת קבע',
+      notes:'נוסף אוטומטית',
+      createdAt:Date.now()
+    });
+
+    await updateDoc(doc(db,'recurring',r.id),{lastAutoAdded:thisMonth});
+    toast('🔄 "'+r.name+'" נוסף אוטומטית להוצאות!');
+  }
+}
 async function autoUpdateSavings(){
   const today=new Date();
   const todayDay=today.getDate();
@@ -2472,6 +3038,14 @@ function initListeners(){
   onSnapshot(collection(db,'events'),snap=>{events=snap.docs.map(d=>({id:d.id,...d.data()}));renderCalendar();});
   onSnapshot(collection(db,'kids'),snap=>{kids=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));renderKids();});
   onSnapshot(collection(db,'expenses'),snap=>{expenses=snap.docs.map(d=>({id:d.id,...d.data()}));renderBudget();});
+  onSnapshot(collection(db,'recurring'),snap=>{
+    recurringItems=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderRecurring();
+    if(!window._recurringAutoAdded){
+      window._recurringAutoAdded=true;
+      setTimeout(autoAddRecurringExpenses,3000);
+    }
+  });
   onSnapshot(collection(db,'savings'),snap=>{
     savings=snap.docs.map(d=>({id:d.id,...d.data()}));
     renderSavings();
