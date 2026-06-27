@@ -1616,6 +1616,40 @@ window.deleteEditSaving=async()=>{
   if(!editingSavingId)return;
   if(confirm('למחוק חיסכון?')){await deleteDoc(doc(db,'savings',editingSavingId));closeSheet();toast('🗑️ נמחק');}
 }; // runs on app open
+
+// Auto-update savings balances monthly
+async function autoUpdateSavings(){
+  const today=new Date();
+  const todayDay=today.getDate();
+
+  for(const sv of savings){
+    if(!sv.monthly||!sv.startDate)continue;
+
+    // Deposit day = same day-of-month as startDate
+    const depositDay=new Date(sv.startDate).getDate();
+    if(todayDay<depositDay)continue;
+
+    // Check if already updated this month
+    const thisMonth=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
+    if((sv.lastAutoUpdate||'')===thisMonth)continue;
+
+    const balance=Number(sv.balance||0);
+    const monthly=Number(sv.monthly||0);
+    const rate=Number(sv.rate||0);
+    const interest=rate?Math.round(balance*(rate/100/12)*100)/100:0;
+    const newBalance=Math.round((balance+monthly+interest)*100)/100;
+    const goal=Number(sv.goal||0);
+
+    await updateDoc(doc(db,'savings',sv.id),{
+      balance:newBalance,
+      lastAutoUpdate:thisMonth
+    });
+
+    toast('🐷 "'+sv.name+'" עודכן: +'+fmt(monthly)+(interest?' + ריבית '+fmt(interest):''));
+    if(goal>0&&newBalance>=goal)toast('🎉 הגעת ליעד "'+sv.name+'"!');
+  }
+}
+
 async function autoUpdateLoans(){
   const today=new Date();
   const todayDay=today.getDate();
@@ -2438,7 +2472,14 @@ function initListeners(){
   onSnapshot(collection(db,'events'),snap=>{events=snap.docs.map(d=>({id:d.id,...d.data()}));renderCalendar();});
   onSnapshot(collection(db,'kids'),snap=>{kids=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));renderKids();});
   onSnapshot(collection(db,'expenses'),snap=>{expenses=snap.docs.map(d=>({id:d.id,...d.data()}));renderBudget();});
-  onSnapshot(collection(db,'savings'),snap=>{savings=snap.docs.map(d=>({id:d.id,...d.data()}));renderSavings();});
+  onSnapshot(collection(db,'savings'),snap=>{
+    savings=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderSavings();
+    if(!window._savingsAutoUpdated){
+      window._savingsAutoUpdated=true;
+      setTimeout(autoUpdateSavings,2500);
+    }
+  });
   onSnapshot(collection(db,'loans'),snap=>{
     loans=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.balance||0)-(a.balance||0));
     renderLoans();
