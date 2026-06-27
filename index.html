@@ -1615,7 +1615,7 @@ window.confirmDeleteSaving=id=>{
 window.deleteEditSaving=async()=>{
   if(!editingSavingId)return;
   if(confirm('למחוק חיסכון?')){await deleteDoc(doc(db,'savings',editingSavingId));closeSheet();toast('🗑️ נמחק');}
-}; (runs on app open)
+}; // runs on app open
 async function autoUpdateLoans(){
   const today=new Date();
   const todayDay=today.getDate();
