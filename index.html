@@ -599,8 +599,10 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   </div>
   <div class="form-row">
     <div><div class="field-label">תאריך תחילה</div><input class="input-field" type="date" id="loanStartDate"></div>
-    <div><div class="field-label">תאריך תשלום הבא</div><input class="input-field" type="date" id="loanNextDate"></div>
+    <div><div class="field-label">תאריך סיום</div><input class="input-field" type="date" id="loanEndDate"></div>
   </div>
+  <div class="field-label">תאריך תשלום הבא</div>
+  <input class="input-field" type="date" id="loanNextDate">
   <div class="field-label">הערות</div>
   <input class="input-field" id="loanNotes" placeholder="מסלול, תנאים מיוחדים...">
   <button class="btn-submit" id="loanSubmitBtn" onclick="saveLoan()">הוסף הלוואה</button>
@@ -879,7 +881,7 @@ window.openSheet=()=>{
   if(currentPage==='loans'){
     editingLoanId=null;
     document.getElementById('loanSheetTitle').textContent='הלוואה חדשה';
-    ['loanName','loanBank','loanOriginal','loanBalance','loanMonthly','loanRate','loanStartDate','loanNextDate','loanNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    ['loanName','loanBank','loanOriginal','loanBalance','loanMonthly','loanRate','loanStartDate','loanEndDate','loanNextDate','loanNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     document.getElementById('loanSubmitBtn').textContent='הוסף הלוואה';
     document.getElementById('loanDeleteBtn').style.display='none';
   }
@@ -1264,6 +1266,7 @@ function renderLoans(){
         <div style="text-align:right">
           <div style="font-size:11px;color:var(--muted)">תשלום הבא</div>
           <div style="font-size:13px;font-weight:700">${nextStr}</div>
+          ${loan.endDate?`<div style="font-size:10px;color:var(--muted);margin-top:2px">סיום: ${new Date(loan.endDate).toLocaleDateString('he-IL')}</div>`:''}
         </div>
       </div>
 
@@ -1318,8 +1321,8 @@ window.openLoanDetail=id=>{
         <div style="font-size:11px;color:var(--muted)">נותרו</div>
       </div>
       <div style="background:var(--bg);border-radius:14px;padding:12px;text-align:center">
-        <div style="font-size:18px;font-weight:800">${pct}%</div>
-        <div style="font-size:11px;color:var(--muted)">הושלם</div>
+        <div style="font-size:16px;font-weight:800">${loan.endDate?new Date(loan.endDate).toLocaleDateString('he-IL'):'—'}</div>
+        <div style="font-size:11px;color:var(--muted)">תאריך סיום</div>
       </div>
     </div>
 
@@ -1407,6 +1410,7 @@ window.saveLoan=async()=>{
     monthly:Number(document.getElementById('loanMonthly').value)||0,
     rate:Number(document.getElementById('loanRate').value)||0,
     startDate:document.getElementById('loanStartDate').value,
+    endDate:document.getElementById('loanEndDate').value,
     nextDate:document.getElementById('loanNextDate').value,
     notes:document.getElementById('loanNotes').value,
   };
@@ -1431,6 +1435,7 @@ window.editLoan=id=>{
   document.getElementById('loanMonthly').value=l.monthly||'';
   document.getElementById('loanRate').value=l.rate||'';
   document.getElementById('loanStartDate').value=l.startDate||'';
+  document.getElementById('loanEndDate').value=l.endDate||'';
   document.getElementById('loanNextDate').value=l.nextDate||'';
   document.getElementById('loanNotes').value=l.notes||'';
   document.getElementById('loanSubmitBtn').textContent='שמור שינויים';
