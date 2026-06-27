@@ -367,11 +367,21 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   <input type="file" id="creditImportInput" accept=".xlsx,.xls,.csv" style="display:none" multiple onchange="importCreditFile(this)">
 
   <!-- Loans Banner -->
-  <div onclick="switchPage('loans')" style="background:linear-gradient(135deg,var(--plum),#5b2d52);border-radius:20px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(124,61,110,.3)">
+  <div onclick="switchPage('loans')" style="background:linear-gradient(135deg,var(--plum),#5b2d52);border-radius:20px;padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(124,61,110,.3)">
     <div style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🏦</div>
     <div style="flex:1">
       <div style="font-size:15px;font-weight:800;color:#fff">הלוואות ומשכנתא</div>
       <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px" id="loansBannerSub">מעקב יתרות ותשלומים</div>
+    </div>
+    <div style="color:rgba(255,255,255,.6);font-size:20px">‹</div>
+  </div>
+
+  <!-- Savings Banner -->
+  <div onclick="switchPage('savings')" style="background:linear-gradient(135deg,#4A7C6F,#2d5c52);border-radius:20px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(74,124,111,.3)">
+    <div style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🐷</div>
+    <div style="flex:1">
+      <div style="font-size:15px;font-weight:800;color:#fff">חסכונות</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px" id="savingsBannerSub">מעקב חסכונות ויעדים</div>
     </div>
     <div style="color:rgba(255,255,255,.6);font-size:20px">‹</div>
   </div>
@@ -543,6 +553,40 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 
 </div>
 
+<!-- ══ SAVINGS PAGE ══ -->
+<div class="page" id="page-savings">
+  <div style="text-align:right;margin-bottom:20px;padding-top:calc(var(--safe-top) + 4px)">
+    <div style="font-size:24px;font-weight:800;color:var(--text)">חסכונות 🐷</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:2px">מעקב חסכונות ויעדים</div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid" style="margin-bottom:20px">
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">💰</div>
+      <div style="font-size:20px;font-weight:800;color:var(--sage)" id="savingsTotalAmount">₪0</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">סה"כ חסכונות</div>
+    </div>
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">🎯</div>
+      <div style="font-size:20px;font-weight:800;color:var(--text)" id="savingsTotalGoal">₪0</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">סה"כ יעדים</div>
+    </div>
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">📊</div>
+      <div style="font-size:20px;font-weight:800;color:var(--text)" id="savingsCount">0</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">חסכונות פעילים</div>
+    </div>
+    <div class="summary-card">
+      <div style="font-size:28px;margin-bottom:4px">📅</div>
+      <div style="font-size:18px;font-weight:800;color:var(--text)" id="savingsMonthly">₪0</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600">הפקדה חודשית</div>
+    </div>
+  </div>
+
+  <div id="savingsList"></div>
+</div>
+
 <!-- ══ BOTTOM NAV ══ -->
 <nav class="bottom-nav">
   <button class="nav-btn" onclick="switchPage('tasks',this)">
@@ -569,6 +613,46 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 
 <button type="button" class="fab" id="fab" onclick="openSheet()">+</button>
 <div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSheet()"></div>
+
+<!-- SAVINGS SHEET -->
+<div class="sheet" id="savingsSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button class="sheet-close" onclick="closeSheet()">×</button>
+    <div class="sheet-title" id="savingsSheetTitle">חיסכון חדש</div>
+  </div>
+  <div class="field-label">שם החיסכון</div>
+  <input class="input-field" id="savingName" placeholder="למשל: קרן חירום, חופשה, דירה...">
+  <div class="field-label">סוג</div>
+  <select class="select-field" id="savingType">
+    <option value="קרן חירום">🛡️ קרן חירום</option>
+    <option value="חופשה">✈️ חופשה</option>
+    <option value="דירה">🏠 דירה</option>
+    <option value="רכב">🚗 רכב</option>
+    <option value="השקעה">📈 השקעה</option>
+    <option value="פנסיה">👴 פנסיה</option>
+    <option value="ילדים">👶 ילדים</option>
+    <option value="אחר">📦 אחר</option>
+  </select>
+  <div class="form-row">
+    <div><div class="field-label">יתרה נוכחית (₪)</div><input class="input-field" type="number" id="savingBalance" placeholder="0"></div>
+    <div><div class="field-label">יעד (₪)</div><input class="input-field" type="number" id="savingGoal" placeholder="0"></div>
+  </div>
+  <div class="form-row">
+    <div><div class="field-label">הפקדה חודשית (₪)</div><input class="input-field" type="number" id="savingMonthly" placeholder="0"></div>
+    <div><div class="field-label">ריבית/תשואה (%)</div><input class="input-field" type="number" id="savingRate" placeholder="0.0" step="0.1"></div>
+  </div>
+  <div class="form-row">
+    <div><div class="field-label">תאריך פתיחה</div><input class="input-field" type="date" id="savingStartDate"></div>
+    <div><div class="field-label">יעד תאריך סיום</div><input class="input-field" type="date" id="savingEndDate"></div>
+  </div>
+  <div class="field-label">בנק / גוף</div>
+  <input class="input-field" id="savingBank" placeholder="למשל: בנק הפועלים, מגדל...">
+  <div class="field-label">הערות</div>
+  <input class="input-field" id="savingNotes" placeholder="הערות נוספות...">
+  <button class="btn-submit sage" id="savingsSubmitBtn" onclick="saveSaving()">הוסף חיסכון</button>
+  <button class="btn-delete" id="savingsDeleteBtn" style="display:none" onclick="deleteEditSaving()">🗑️ מחק חיסכון</button>
+</div>
 
 <!-- LOAN SHEET -->
 <div class="sheet" id="loanSheet">
@@ -862,6 +946,7 @@ window.openSheet=()=>{
   else if(currentPage==='kids')sid='kidsSheet';
   else if(currentPage==='budget')sid='expenseSheet';
   else if(currentPage==='loans')sid='loanSheet';
+  else if(currentPage==='savings')sid='savingsSheet';
   if(currentPage==='tasks'){
     document.getElementById('taskSheetTitle').textContent='משימה חדשה';
     document.getElementById('taskTitle').value='';document.getElementById('taskDue').value='';
@@ -877,6 +962,13 @@ window.openSheet=()=>{
     document.getElementById('calSubmitBtn').textContent='הוסף אירוע';
     document.getElementById('calDeleteBtn').style.display='none';
     selectedEmoji='🗓️';selectedColor='#7C3D6E';renderEmojiPicker();renderColorPicker();
+  }
+  if(currentPage==='savings'){
+    editingSavingId=null;
+    document.getElementById('savingsSheetTitle').textContent='חיסכון חדש';
+    ['savingName','savingBank','savingBalance','savingGoal','savingMonthly','savingRate','savingStartDate','savingEndDate','savingNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    document.getElementById('savingsSubmitBtn').textContent='הוסף חיסכון';
+    document.getElementById('savingsDeleteBtn').style.display='none';
   }
   if(currentPage==='loans'){
     editingLoanId=null;
@@ -1219,7 +1311,11 @@ function renderLoans(){
     const original=Number(loan.original||0);
     const monthly=Number(loan.monthly||0);
     const pct=original?Math.round((1-balance/original)*100):0;
-    const monthsLeft=monthly?Math.round(balance/monthly):0;
+    let monthsLeft=0;
+    if(loan.endDate){
+      const now=new Date();const end=new Date(loan.endDate);
+      monthsLeft=Math.max(0,Math.round((end-now)/(1000*60*60*24*30.44)));
+    } else { monthsLeft=monthly?Math.round(balance/monthly):0; }
     const emoji=LOAN_TYPE_EMOJI[loan.type]||'📦';
     const nextD=loan.nextDate?new Date(loan.nextDate):null;
     const nextStr=nextD?nextD.getDate()+' '+HEB_MONTHS_FULL[nextD.getMonth()]+' '+nextD.getFullYear():'—';
@@ -1286,7 +1382,16 @@ window.openLoanDetail=id=>{
   const original=Number(loan.original||0);
   const monthly=Number(loan.monthly||0);
   const rate=Number(loan.rate||0);
-  const monthsLeft=monthly?Math.round(balance/monthly):0;
+
+  // Calculate months remaining from start/end dates
+  let monthsLeft=0;
+  if(loan.endDate){
+    const now=new Date();
+    const end=new Date(loan.endDate);
+    monthsLeft=Math.max(0,Math.round((end-now)/(1000*60*60*24*30.44)));
+  } else {
+    monthsLeft=monthly?Math.round(balance/monthly):0;
+  }
   const yearsLeft=Math.floor(monthsLeft/12);
   const remainMonths=monthsLeft%12;
   const paidAmt=original-balance;
@@ -1352,7 +1457,165 @@ window.openLoanDetail=id=>{
   document.getElementById('loanDetailModal').style.display='flex';
 };
 
-// Auto-update loan balances monthly (runs on app open)
+// ══ SAVINGS MODULE ══
+let savings=[];
+let editingSavingId=null;
+
+const SAVING_TYPE_EMOJI={
+  'קרן חירום':'🛡️','חופשה':'✈️','דירה':'🏠','רכב':'🚗',
+  'השקעה':'📈','פנסיה':'👴','ילדים':'👶','אחר':'📦'
+};
+
+function renderSavings(){
+  const totalBalance=savings.reduce((s,x)=>s+Number(x.balance||0),0);
+  const totalGoal=savings.reduce((s,x)=>s+Number(x.goal||0),0);
+  const totalMonthly=savings.reduce((s,x)=>s+Number(x.monthly||0),0);
+
+  const el=id=>document.getElementById(id);
+  if(el('savingsTotalAmount'))el('savingsTotalAmount').textContent=fmt(totalBalance);
+  if(el('savingsTotalGoal'))el('savingsTotalGoal').textContent=fmt(totalGoal);
+  if(el('savingsCount'))el('savingsCount').textContent=savings.length;
+  if(el('savingsMonthly'))el('savingsMonthly').textContent=fmt(totalMonthly);
+
+  // Update savings banner in budget page
+  const bannerSub=el('savingsBannerSub');
+  if(bannerSub&&savings.length){
+    bannerSub.textContent=savings.length+' חסכונות • סה"כ: '+fmt(totalBalance);
+  }
+
+  const listEl=el('savingsList');
+  if(!listEl)return;
+  if(!savings.length){
+    listEl.innerHTML='<div class="empty-state"><span class="empty-icon">🐷</span>אין חסכונות עדיין<br><span style="font-size:13px;color:var(--muted)">לחץ + כדי להוסיף</span></div>';
+    return;
+  }
+
+  listEl.innerHTML=savings.map(sv=>{
+    const balance=Number(sv.balance||0);
+    const goal=Number(sv.goal||0);
+    const monthly=Number(sv.monthly||0);
+    const pct=goal?Math.min(100,Math.round(balance/goal*100)):0;
+    const emoji=SAVING_TYPE_EMOJI[sv.type]||'📦';
+    const remaining=Math.max(0,goal-balance);
+    const monthsToGoal=monthly&&remaining?Math.ceil(remaining/monthly):0;
+
+    // Time remaining to end date
+    let timeStr='';
+    if(sv.endDate){
+      const now=new Date(),end=new Date(sv.endDate);
+      const months=Math.max(0,Math.round((end-now)/(1000*60*60*24*30.44)));
+      const years=Math.floor(months/12);const rem=months%12;
+      timeStr=years>0?years+' שנים '+rem+' חודשים':rem+' חודשים';
+    }
+
+    return `<div style="background:var(--card);border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+      <!-- Header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div>
+          <div style="font-size:22px;font-weight:800;color:var(--sage)">${fmt(balance)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">יתרה נוכחית</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:16px;font-weight:800;display:flex;align-items:center;gap:6px;justify-content:flex-end">
+            ${sv.name} <span style="font-size:20px">${emoji}</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${sv.bank||''}</div>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      ${goal?`
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:11px;color:var(--muted)">${pct}% מהיעד</span>
+        <span style="font-size:11px;color:var(--muted)">יעד: ${fmt(goal)}</span>
+      </div>
+      <div style="background:var(--border);border-radius:6px;height:8px;margin-bottom:14px;overflow:hidden">
+        <div style="width:${pct}%;background:var(--sage);height:100%;border-radius:6px;transition:width .5s"></div>
+      </div>`:''}
+
+      ${sv.notes?`<div style="font-size:12px;color:var(--muted);margin-bottom:10px;text-align:right">${sv.notes}</div>`:''}
+
+      <!-- Footer -->
+      <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;gap:16px">
+          ${monthly?`<div style="text-align:center">
+            <div style="font-size:13px;font-weight:700">${fmt(monthly)}</div>
+            <div style="font-size:10px;color:var(--muted)">חודשי</div>
+          </div>`:''}
+          ${monthsToGoal?`<div style="text-align:center">
+            <div style="font-size:13px;font-weight:700">${monthsToGoal}</div>
+            <div style="font-size:10px;color:var(--muted)">חודשים ליעד</div>
+          </div>`:''}
+        </div>
+        <div style="text-align:right">
+          ${sv.endDate?`<div style="font-size:11px;color:var(--muted)">יעד תאריך</div>
+          <div style="font-size:13px;font-weight:700">${new Date(sv.endDate).toLocaleDateString('he-IL')}</div>`:''}
+          ${timeStr?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${timeStr} נותרו</div>`:''}
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="editSaving('${sv.id}')" style="flex:1;padding:10px;border-radius:12px;background:#e8f7ef;color:var(--sage);font-weight:700;font-size:13px">✏️ עריכה</button>
+        <button onclick="confirmDeleteSaving('${sv.id}')" style="padding:10px 14px;border-radius:12px;background:#fde8e8;color:var(--rose);font-size:16px">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.saveSaving=async()=>{
+  const name=document.getElementById('savingName').value.trim();
+  if(!name)return;
+  const data={
+    name,
+    type:document.getElementById('savingType').value,
+    bank:document.getElementById('savingBank').value,
+    balance:Number(document.getElementById('savingBalance').value)||0,
+    goal:Number(document.getElementById('savingGoal').value)||0,
+    monthly:Number(document.getElementById('savingMonthly').value)||0,
+    rate:Number(document.getElementById('savingRate').value)||0,
+    startDate:document.getElementById('savingStartDate').value,
+    endDate:document.getElementById('savingEndDate').value,
+    notes:document.getElementById('savingNotes').value,
+  };
+  if(editingSavingId){
+    await updateDoc(doc(db,'savings',editingSavingId),data);
+    closeSheet();toast('🐷 חיסכון עודכן!');
+  }else{
+    await addDoc(collection(db,'savings'),{...data,createdAt:Date.now()});
+    closeSheet();toast('🐷 חיסכון נוסף!');
+  }
+};
+
+window.editSaving=id=>{
+  const sv=savings.find(x=>x.id===id);if(!sv)return;
+  editingSavingId=id;
+  document.getElementById('savingsSheetTitle').textContent='עריכת חיסכון';
+  document.getElementById('savingName').value=sv.name||'';
+  document.getElementById('savingType').value=sv.type||'אחר';
+  document.getElementById('savingBank').value=sv.bank||'';
+  document.getElementById('savingBalance').value=sv.balance||'';
+  document.getElementById('savingGoal').value=sv.goal||'';
+  document.getElementById('savingMonthly').value=sv.monthly||'';
+  document.getElementById('savingRate').value=sv.rate||'';
+  document.getElementById('savingStartDate').value=sv.startDate||'';
+  document.getElementById('savingEndDate').value=sv.endDate||'';
+  document.getElementById('savingNotes').value=sv.notes||'';
+  document.getElementById('savingsSubmitBtn').textContent='שמור שינויים';
+  document.getElementById('savingsDeleteBtn').style.display='block';
+  activeSheet=document.getElementById('savingsSheet');
+  document.getElementById('sheetBackdrop').classList.add('open');activeSheet.classList.add('open');
+};
+
+window.confirmDeleteSaving=id=>{
+  const sv=savings.find(x=>x.id===id);if(!sv)return;
+  if(confirm('למחוק את "'+sv.name+'"?'))deleteDoc(doc(db,'savings',id));
+};
+
+window.deleteEditSaving=async()=>{
+  if(!editingSavingId)return;
+  if(confirm('למחוק חיסכון?')){await deleteDoc(doc(db,'savings',editingSavingId));closeSheet();toast('🗑️ נמחק');}
+}; (runs on app open)
 async function autoUpdateLoans(){
   const today=new Date();
   const todayDay=today.getDate();
@@ -2175,6 +2438,7 @@ function initListeners(){
   onSnapshot(collection(db,'events'),snap=>{events=snap.docs.map(d=>({id:d.id,...d.data()}));renderCalendar();});
   onSnapshot(collection(db,'kids'),snap=>{kids=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));renderKids();});
   onSnapshot(collection(db,'expenses'),snap=>{expenses=snap.docs.map(d=>({id:d.id,...d.data()}));renderBudget();});
+  onSnapshot(collection(db,'savings'),snap=>{savings=snap.docs.map(d=>({id:d.id,...d.data()}));renderSavings();});
   onSnapshot(collection(db,'loans'),snap=>{
     loans=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.balance||0)-(a.balance||0));
     renderLoans();
