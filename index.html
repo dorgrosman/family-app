@@ -385,8 +385,8 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
     </div>
     <div class="summary-card">
       <div style="font-size:28px;margin-bottom:4px">📋</div>
-      <div style="font-size:22px;font-weight:800;color:var(--text)" id="budgetTxCount">0</div>
-      <div style="font-size:12px;color:var(--muted);font-weight:600">הוצאות החודש<br><span style="font-size:10px">רשומות</span></div>
+      <div style="font-size:18px;font-weight:800;color:var(--text)" id="budgetFixedTotal">₪0</div>
+      <div style="font-size:11px;color:var(--muted);font-weight:600">הלוואות+חסכונות<br><span style="font-size:10px">+הוצאות קבועות</span></div>
     </div>
   </div>
 
@@ -1746,7 +1746,8 @@ function renderRecurring(){
     return (!start||start<=todayStr)&&todayStr<=end;
   });
 
-  const totalMonthly=active.reduce((s,r)=>s+getRecurringMonthlyAmount(r),0);
+  const allItems=recurringItems.filter(r=>(r.endDate||'9999-12-31')>=todayStr);
+  const totalMonthly=allItems.reduce((s,r)=>s+getRecurringMonthlyAmount(r),0);
   const totalYearly=totalMonthly*12;
 
   // Next payment
@@ -2452,7 +2453,15 @@ function renderBudget(){
   if(el('budgetYearTotal'))el('budgetYearTotal').textContent=fmt(yearTotal);
   if(el('budgetMonthTotal'))el('budgetMonthTotal').textContent=fmt(monthTotal);
   if(el('budgetDailyAvg'))el('budgetDailyAvg').textContent=fmt(dailyAvg);
-  if(el('budgetTxCount'))el('budgetTxCount').textContent=monthExps.length;
+  // Fixed monthly obligations: loans + savings deposits + recurring
+  const loansMonthly=(typeof loans!=='undefined'?loans:[] ).reduce((s,l)=>s+Number(l.monthly||0),0);
+  const savingsMonthly=(typeof savings!=='undefined'?savings:[]).reduce((s,sv)=>s+Number(sv.monthly||0),0);
+  const todayStr2=now.toISOString().slice(0,10);
+  const recurringMonthly=(typeof recurringItems!=='undefined'?recurringItems:[])
+    .filter(r=>(r.endDate||'9999-12-31')>=todayStr2)
+    .reduce((s,r)=>s+getRecurringMonthlyAmount(r),0);
+  const fixedTotal=loansMonthly+savingsMonthly+recurringMonthly;
+  if(el('budgetFixedTotal'))el('budgetFixedTotal').textContent=fmt(fixedTotal);
   if(el('budgetMonthLabel'))el('budgetMonthLabel').textContent=HEB_MONTHS_FULL[budgetMonth]+' '+budgetYear;
   if(el('budgetChartYear'))el('budgetChartYear').textContent=budgetYear;
 
