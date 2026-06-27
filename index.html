@@ -1780,13 +1780,18 @@ function renderRecurring(){
     return;
   }
 
-  // Group by active/ended
+  // Group by active/future/ended
+  const future=recurringItems.filter(r=>r.startDate&&r.startDate>todayStr);
   const ended=recurringItems.filter(r=>(r.endDate||'9999-12-31')<todayStr);
 
   let html='';
   if(active.length){
     html+=`<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;text-align:right">פעילות · ${active.length}</div>`;
     html+=active.map(r=>recurringCardHTML(r,true)).join('');
+  }
+  if(future.length){
+    html+=`<div style="font-size:12px;font-weight:700;color:var(--muted);margin:16px 0 10px;text-align:right">עתידיות · ${future.length}</div>`;
+    html+=future.map(r=>recurringCardHTML(r,true)).join('');
   }
   if(ended.length){
     html+=`<div style="font-size:12px;font-weight:700;color:var(--muted);margin:16px 0 10px;text-align:right">הסתיימו · ${ended.length}</div>`;
