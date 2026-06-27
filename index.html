@@ -366,6 +366,16 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   </div>
   <input type="file" id="creditImportInput" accept=".xlsx,.xls,.csv" style="display:none" multiple onchange="importCreditFile(this)">
 
+  <!-- Loans Banner -->
+  <div onclick="switchPage('loans')" style="background:linear-gradient(135deg,var(--plum),#5b2d52);border-radius:20px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(124,61,110,.3)">
+    <div style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🏦</div>
+    <div style="flex:1">
+      <div style="font-size:15px;font-weight:800;color:#fff">הלוואות ומשכנתא</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px" id="loansBannerSub">מעקב יתרות ותשלומים</div>
+    </div>
+    <div style="color:rgba(255,255,255,.6);font-size:20px">‹</div>
+  </div>
+
   <!-- Summary Cards -->
   <div class="summary-grid" style="margin-bottom:20px">
     <div class="summary-card">
@@ -551,9 +561,9 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
     <div class="nav-icon-wrap"><span class="nav-icon">💰</span></div>
     <span class="nav-label">תקציב</span>
   </button>
-  <button class="nav-btn" onclick="switchPage('loans',this)">
-    <div class="nav-icon-wrap"><span class="nav-icon">🏦</span></div>
-    <span class="nav-label">הלוואות</span>
+  <button class="nav-btn" onclick="switchPage('kids',this)">
+    <div class="nav-icon-wrap"><span class="nav-icon">👶</span></div>
+    <span class="nav-label">ילדים</span>
   </button>
 </nav>
 
@@ -2163,6 +2173,13 @@ function initListeners(){
   onSnapshot(collection(db,'loans'),snap=>{
     loans=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.balance||0)-(a.balance||0));
     renderLoans();
+    // Update banner in budget page
+    const bannerSub=document.getElementById('loansBannerSub');
+    if(bannerSub){
+      const total=loans.reduce((s,l)=>s+Number(l.balance||0),0);
+      const monthly=loans.reduce((s,l)=>s+Number(l.monthly||0),0);
+      bannerSub.textContent=loans.length+' הלוואות • יתרה כוללת: '+fmt(total)+' • חודשי: '+fmt(monthly);
+    }
     // Auto-update on first load
     if(!window._loansAutoUpdated){
       window._loansAutoUpdated=true;
