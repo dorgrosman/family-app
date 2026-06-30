@@ -144,17 +144,22 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 .cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .cal-nav-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--card); font-size: 20px; color: var(--plum); font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 .cal-month-label { font-size: 18px; font-weight: 800; color: var(--text); }
-.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; background: var(--card); border-radius: 20px; padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,.06); margin-bottom: 20px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 0; background: var(--card); border-radius: 20px; padding: 12px 10px 16px; box-shadow: 0 2px 12px rgba(0,0,0,.06); margin-bottom: 20px; position: relative; }
 .cal-day-name { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); padding: 4px 0 8px; }
-.cal-cell { border-radius: 10px; padding: 6px 2px; text-align: center; cursor: pointer; min-height: 46px; display: flex; flex-direction: column; align-items: center; transition: background .15s; }
+.cal-cell { border-radius: 10px; padding: 8px 2px 6px; text-align: center; cursor: pointer; min-height: 54px; display: flex; flex-direction: column; align-items: center; transition: background .15s; position: relative; }
 .cal-cell:active { background: var(--plum-light); }
 .cal-cell.today { background: var(--plum); }
 .cal-cell.today .cal-num { color: #fff; font-weight: 800; }
-.cal-cell.selected:not(.today) { background: var(--plum-light); }
+.cal-cell.has-event:not(.today) { background: #d4edda; border-radius: 10px; }
+.cal-cell.selected:not(.today) { background: #b8dff0; border-radius: 10px; }
 .cal-num { font-size: 14px; color: var(--text); }
 .cal-dots { display: flex; justify-content: center; gap: 2px; margin-top: 3px; }
-.cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+.cal-dot { width: 6px; height: 6px; border-radius: 50%; }
 .cal-cell.today .cal-dot { background: rgba(255,255,255,.8) !important; }
+.cal-event-popup { position: fixed; background: #fff; border-radius: 14px; padding: 12px 14px; box-shadow: 0 8px 30px rgba(0,0,0,.18); z-index: 9999; min-width: 180px; max-width: 240px; text-align: right; direction: rtl; pointer-events: auto; }
+.cal-event-popup .pop-title { font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 3px; }
+.cal-event-popup .pop-meta { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+.cal-event-popup .pop-edit { background: var(--plum-light); color: var(--plum); border-radius: 10px; padding: 7px 14px; font-size: 13px; font-weight: 700; width: 100%; }
 .range-bar { position: absolute; bottom: 5px; left: 0; right: 0; height: 4px; border-radius: 2px; opacity: .5; }
 .upcoming-event {
   background: var(--card); border-radius: 18px; padding: 14px 16px;
@@ -1259,7 +1264,8 @@ function renderCalendar(){
     const dayEvs=events.filter(e=>{const f=e.dateFrom||e.date||'',t=e.dateTo||f;return ds>=f&&ds<=t;});
     const isToday=d===td.getDate()&&calMonth===td.getMonth()&&calYear===td.getFullYear();
     const dots=dayEvs.slice(0,3).map(e=>'<div class="cal-dot" style="background:'+(isToday?'rgba(255,255,255,.8)':e.color)+'"></div>').join('');
-    html+='<div class="cal-cell '+(isToday?'today':'')+'" onclick="calDayTap('+d+')"><span class="cal-num">'+d+'</span><div class="cal-dots">'+dots+'</div></div>';
+    const hasEv=dayEvs.length>0;
+    html+='<div class="cal-cell '+(isToday?'today':'')+(hasEv?' has-event':'')+'" onclick="calDayTap('+d+',event)"><span class="cal-num">'+d+'</span><div class="cal-dots">'+dots+'</div></div>';
   }
   document.getElementById('calGrid').innerHTML=html;
   const now=new Date();
@@ -1291,17 +1297,54 @@ function renderCalendar(){
   if(homeEl)homeEl.innerHTML=upcoming.slice(0,3).map(e=>`<div class="home-event-card"><span class="home-event-icon">${e.emoji}</span><div><div class="home-event-title">${e.title}</div><div class="home-event-date">${(e.dateFrom||e.date||'').slice(8,10)}/${(e.dateFrom||e.date||'').slice(5,7)}${e.time?' • '+e.time:''}</div></div></div>`).join('');
 }
 window.calNav=dir=>{calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCalendar();};
-window.calDayTap=d=>{
+window.calDayTap=(d,ev)=>{
   const ds=calYear+'-'+pad(calMonth+1)+'-'+pad(d);
-  editingEventId=null;
-  document.getElementById('calSheetTitle').textContent='אירוע ביום '+d+'/'+(calMonth+1);
-  document.getElementById('evTitle').value='';document.getElementById('evTime').value='';
-  document.getElementById('evDateFrom').value=ds;document.getElementById('evDateTo').value='';
-  document.getElementById('calSubmitBtn').textContent='הוסף אירוע';
-  document.getElementById('calDeleteBtn').style.display='none';
-  selectedEmoji='🗓️';selectedColor='#7C3D6E';renderEmojiPicker();renderColorPicker();
-  activeSheet=document.getElementById('calSheet');
-  document.getElementById('sheetBackdrop').classList.add('open');activeSheet.classList.add('open');
+  const dayEvs=events.filter(e=>{const f=e.dateFrom||e.date||'',t=e.dateTo||f;return ds>=f&&ds<=t;});
+
+  // Remove any existing popup
+  const old=document.getElementById('calPopup');if(old)old.remove();
+
+  if(dayEvs.length>0){
+    // Show popup with event info
+    const e=dayEvs[0];
+    const popup=document.createElement('div');
+    popup.id='calPopup';
+    popup.className='cal-event-popup';
+    const dateStr=(e.dateFrom||e.date||'').slice(8,10)+'/'+(e.dateFrom||e.date||'').slice(5,7);
+    popup.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:20px">${e.emoji||'🗓️'}</span>
+        <div>
+          <div class="pop-title">${e.title}</div>
+          <div class="pop-meta">${e.time?e.time+' - ':''}${dateStr}${dayEvs.length>1?' (+'+( dayEvs.length-1)+'אחרים)':''}</div>
+        </div>
+      </div>
+      ${dayEvs.length>1?dayEvs.slice(1).map(x=>`<div style="font-size:12px;color:var(--muted);padding:2px 0">${x.emoji||'🗓️'} ${x.title}</div>`).join(''):''}
+      <button class="pop-edit" onclick="document.getElementById('calPopup').remove();editEvent('${e.id}')">✏️ עריכה</button>
+    `;
+    // Position near tap
+    const rect=ev.target.closest('.cal-cell').getBoundingClientRect();
+    document.body.appendChild(popup);
+    const pw=popup.offsetWidth,ph=popup.offsetHeight;
+    let top=rect.bottom+6,left=rect.left-(pw/2)+(rect.width/2);
+    if(left+pw>window.innerWidth-8)left=window.innerWidth-pw-8;
+    if(left<8)left=8;
+    if(top+ph>window.innerHeight-8)top=rect.top-ph-6;
+    popup.style.top=top+'px';popup.style.left=left+'px';
+    // Close on outside tap
+    setTimeout(()=>document.addEventListener('click',function h(e2){if(!popup.contains(e2.target)){popup.remove();document.removeEventListener('click',h);}},true),50);
+  } else {
+    // No events — open new event sheet
+    editingEventId=null;
+    document.getElementById('calSheetTitle').textContent='אירוע ביום '+d+'/'+(calMonth+1);
+    document.getElementById('evTitle').value='';document.getElementById('evTime').value='';
+    document.getElementById('evDateFrom').value=ds;document.getElementById('evDateTo').value='';
+    document.getElementById('calSubmitBtn').textContent='הוסף אירוע';
+    document.getElementById('calDeleteBtn').style.display='none';
+    selectedEmoji='🗓️';selectedColor='#7C3D6E';renderEmojiPicker();renderColorPicker();
+    activeSheet=document.getElementById('calSheet');
+    document.getElementById('sheetBackdrop').classList.add('open');activeSheet.classList.add('open');
+  }
 };
 window.editEvent=id=>{
   const e=events.find(x=>x.id===id);if(!e)return;editingEventId=id;
