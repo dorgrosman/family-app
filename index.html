@@ -142,6 +142,13 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 
 /* ── CALENDAR ── */
 .cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.status-btn { padding: 7px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: var(--bg); color: var(--muted); border: 2px solid transparent; transition: all .15s; cursor: pointer; }
+.status-btn.active { border-color: var(--plum); color: var(--plum); background: var(--plum-light); }
+.status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.status-badge.todo { background: #f0f0f0; color: #888; }
+.status-badge.inprogress { background: #dbeafe; color: #2563eb; }
+.status-badge.waiting { background: #fef9c3; color: #b45309; }
+.status-badge.done { background: #dcfce7; color: #16a34a; }
 .cal-nav-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--card); font-size: 20px; color: var(--plum); font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 .cal-month-label { font-size: 18px; font-weight: 800; color: var(--text); }
 .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; background: var(--card); border-radius: 20px; padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,.06); margin-bottom: 20px; }
@@ -812,6 +819,14 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
       </select>
     </div>
   </div>
+  <div class="field-label">סטטוס</div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap" id="taskStatusPicker">
+    <button type="button" class="status-btn active" data-status="todo" onclick="selectTaskStatus('todo',this)">⬜ עוד לא התחלתי</button>
+    <button type="button" class="status-btn" data-status="inprogress" onclick="selectTaskStatus('inprogress',this)">🔵 בתהליך</button>
+    <button type="button" class="status-btn" data-status="waiting" onclick="selectTaskStatus('waiting',this)">🟡 מחכה לתגובה</button>
+    <button type="button" class="status-btn" data-status="done" onclick="selectTaskStatus('done',this)">🟢 בוצע</button>
+  </div>
+  <input type="hidden" id="taskStatus" value="todo">
   <div class="field-label">תאריך יעד</div>
   <input class="input-field" type="date" id="taskDue">
   <button class="btn-submit" id="taskSubmitBtn" onclick="saveTask()">הוסף משימה</button>
@@ -1137,6 +1152,7 @@ function renderTasks(){
           <div class="priority-dot" style="background:${PRIORITY_COLOR[t.priority]||'#ccc'}"></div>
           <span class="meta-pill">${t.assignee}</span>
           ${t.dueDate?'<span class="meta-tag">📅 '+t.dueDate+'</span>':''}
+          <span class="status-badge ${'todo inprogress waiting done'.includes(t.status||'todo')?t.status||'todo':'todo'}">${{todo:'⬜ עוד לא התחלתי',inprogress:'🔵 בתהליך',waiting:'🟡 מחכה לתגובה',done:'🟢 בוצע'}[t.status||'todo']}</span>
         </div>
       </div>
       <button class="card-edit" onclick="editTask('${t.id}')">✏️</button>
@@ -1145,6 +1161,11 @@ function renderTasks(){
   document.getElementById('sumTasks').textContent=tasks.filter(t=>!t.done).length;
 }
 window.toggleTask=async(id,done)=>{await updateDoc(doc(db,'tasks',id),{done});};
+window.selectTaskStatus=(status,btn)=>{
+  document.getElementById('taskStatus').value=status;
+  document.querySelectorAll('#taskStatusPicker .status-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+};
 window.confirmDeleteTask=id=>{const t=tasks.find(x=>x.id===id);if(!t)return;if(confirm('למחוק "'+t.title+'"?'))deleteDoc(doc(db,'tasks',id));};
 window.setTaskFilter=(f,btn)=>{taskFilter=f;document.querySelectorAll('#page-tasks .filter-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTasks();};
 window.editTask=id=>{
@@ -1157,12 +1178,15 @@ window.editTask=id=>{
   document.getElementById('taskDue').value=t.dueDate||'';
   document.getElementById('taskSubmitBtn').textContent='שמור שינויים';
   document.getElementById('taskDeleteBtn').style.display='block';
+  const st=t.status||'todo';
+  document.getElementById('taskStatus').value=st;
+  document.querySelectorAll('#taskStatusPicker .status-btn').forEach(b=>{b.classList.toggle('active',b.dataset.status===st);});
   activeSheet=document.getElementById('taskSheet');
   document.getElementById('sheetBackdrop').classList.add('open');activeSheet.classList.add('open');
 };
 window.saveTask=async()=>{
   const title=document.getElementById('taskTitle').value.trim();if(!title)return;
-  const data={title,assignee:document.getElementById('taskAssignee').value,priority:document.getElementById('taskPriority').value,dueDate:document.getElementById('taskDue').value};
+  const data={title,assignee:document.getElementById('taskAssignee').value,priority:document.getElementById('taskPriority').value,dueDate:document.getElementById('taskDue').value,status:document.getElementById('taskStatus').value||'todo'};
   if(editingTaskId){await updateDoc(doc(db,'tasks',editingTaskId),data);closeSheet();toast('✅ משימה עודכנה!');}
   else{await addDoc(collection(db,'tasks'),{...data,done:false,createdAt:Date.now()});closeSheet();toast('✅ משימה נוספה!');}
   sendPushToOthers('🏠 משימה '+(editingTaskId?'עודכנה':'חדשה')+'!',data.title+' — '+data.assignee);
