@@ -149,6 +149,10 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 .status-badge.inprogress { background: #dbeafe; color: #2563eb; }
 .status-badge.waiting { background: #fef9c3; color: #b45309; }
 .status-badge.done { background: #dcfce7; color: #16a34a; }
+.status-popup { position: fixed; background: #fff; border-radius: 16px; padding: 8px; box-shadow: 0 8px 30px rgba(0,0,0,.18); z-index: 9999; display: flex; flex-direction: column; gap: 4px; min-width: 190px; }
+.status-popup-item { padding: 9px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; text-align: right; transition: background .12s; }
+.status-popup-item:hover { background: var(--bg); }
+.status-popup-item.current { background: var(--plum-light); color: var(--plum); }
 .cal-nav-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--card); font-size: 20px; color: var(--plum); font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 .cal-month-label { font-size: 18px; font-weight: 800; color: var(--text); }
 .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; background: var(--card); border-radius: 20px; padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,.06); margin-bottom: 20px; }
@@ -1152,7 +1156,7 @@ function renderTasks(){
           <div class="priority-dot" style="background:${PRIORITY_COLOR[t.priority]||'#ccc'}"></div>
           <span class="meta-pill">${t.assignee}</span>
           ${t.dueDate?'<span class="meta-tag">📅 '+t.dueDate+'</span>':''}
-          <span class="status-badge ${'todo inprogress waiting done'.includes(t.status||'todo')?t.status||'todo':'todo'}">${{todo:'⬜ עוד לא התחלתי',inprogress:'🔵 בתהליך',waiting:'🟡 מחכה לתגובה',done:'🟢 בוצע'}[t.status||'todo']}</span>
+          <span class="status-badge ${'todo inprogress waiting done'.includes(t.status||'todo')?t.status||'todo':'todo'}" onclick="openStatusPicker('${t.id}',this)" style="cursor:pointer">${{todo:'⬜ עוד לא התחלתי',inprogress:'🔵 בתהליך',waiting:'🟡 מחכה לתגובה',done:'🟢 בוצע'}[t.status||'todo']}</span>
         </div>
       </div>
       <button class="card-edit" onclick="editTask('${t.id}')">✏️</button>
@@ -1165,6 +1169,30 @@ window.selectTaskStatus=(status,btn)=>{
   document.getElementById('taskStatus').value=status;
   document.querySelectorAll('#taskStatusPicker .status-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
+};
+
+const STATUS_LABELS={todo:'⬜ עוד לא התחלתי',inprogress:'🔵 בתהליך',waiting:'🟡 מחכה לתגובה',done:'🟢 בוצע'};
+window.openStatusPicker=(taskId,badgeEl)=>{
+  const existing=document.getElementById('statusPopup');if(existing)existing.remove();
+  const task=tasks.find(t=>t.id===taskId);if(!task)return;
+  const current=task.status||'todo';
+  const popup=document.createElement('div');
+  popup.id='statusPopup';popup.className='status-popup';
+  popup.innerHTML=Object.entries(STATUS_LABELS).map(([k,v])=>
+    `<div class="status-popup-item${k===current?' current':''}" onclick="setTaskStatus('${taskId}','${k}')">${v}</div>`
+  ).join('');
+  document.body.appendChild(popup);
+  const rect=badgeEl.getBoundingClientRect();
+  let top=rect.bottom+6, left=rect.left;
+  if(left+200>window.innerWidth-8)left=window.innerWidth-208;
+  if(top+180>window.innerHeight-8)top=rect.top-180-6;
+  popup.style.top=top+'px';popup.style.left=left+'px';
+  setTimeout(()=>document.addEventListener('click',function h(e){if(!popup.contains(e.target)){popup.remove();document.removeEventListener('click',h);}},true),50);
+};
+window.setTaskStatus=async(taskId,status)=>{
+  document.getElementById('statusPopup')?.remove();
+  await updateDoc(doc(db,'tasks',taskId),{status});
+  toast(STATUS_LABELS[status]);
 };
 window.confirmDeleteTask=id=>{const t=tasks.find(x=>x.id===id);if(!t)return;if(confirm('למחוק "'+t.title+'"?'))deleteDoc(doc(db,'tasks',id));};
 window.setTaskFilter=(f,btn)=>{taskFilter=f;document.querySelectorAll('#page-tasks .filter-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTasks();};
