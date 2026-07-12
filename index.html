@@ -3083,7 +3083,7 @@ async function renderFiles(folderId){
       </div>
       <div style="display:flex;gap:8px;width:100%">
         <a href="${f.url}" target="_blank" style="flex:1;text-align:center;background:var(--plum);color:#fff;font-size:13px;font-weight:700;padding:9px 0;border-radius:12px">פתח</a>
-        <a href="${f.url}" download="${f.name}" style="flex:1;text-align:center;background:var(--bg);color:var(--text);font-size:13px;font-weight:700;padding:9px 0;border-radius:12px">⬇️ הורד</a>
+        <button onclick="downloadFile('${f.url}','${f.name}')" style="flex:1;background:var(--bg);color:var(--text);font-size:13px;font-weight:700;padding:9px 0;border-radius:12px">⬇️ הורד</button>
         <button onclick="shareFile('${f.url}','${f.name}')" style="flex:1;background:var(--bg);color:var(--text);font-size:13px;font-weight:700;padding:9px 0;border-radius:12px">🔗 שתף</button>
         <button onclick="renameFile('${folderId}','${f.id}')" style="background:var(--bg);color:var(--muted);font-size:16px;padding:9px 10px;border-radius:12px">✏️</button>
         <button onclick="deleteFile('${folderId}','${f.id}','${f.storagePath}')" style="background:var(--bg);color:#e53e3e;font-size:16px;padding:9px 10px;border-radius:12px">🗑️</button>
@@ -3175,6 +3175,23 @@ function renderFolderColorPicker(){
     btn.addEventListener('click',()=>{newFolderColor=btn.dataset.color;renderFolderColorPicker();});
   });
 }
+
+window.downloadFile=async(url,name)=>{
+  try{
+    toast('⬇️ מוריד...');
+    const resp=await fetch(url);
+    const blob=await resp.blob();
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
+    toast('✅ הורד בהצלחה!');
+  }catch(e){
+    toast('❌ שגיאה בהורדה');
+  }
+};
 
 window.shareFile=async(url,name)=>{
   if(navigator.share){
