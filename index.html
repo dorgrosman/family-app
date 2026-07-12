@@ -485,15 +485,6 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
     <div id="budgetBarChart" style="direction:ltr"></div>
   </div>
 
-  <!-- Yearly Donut Chart -->
-  <div style="background:#fff;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
-    <div style="font-size:15px;font-weight:800;text-align:right;margin-bottom:14px">🍕 לפי קטגוריות (שנתי <span id="yearlyDonutYear"></span>)</div>
-    <div style="display:flex;justify-content:center;margin-bottom:16px">
-      <canvas id="yearlyDonutChart" width="180" height="180"></canvas>
-    </div>
-    <div id="yearlyDonutLegend" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;direction:rtl"></div>
-  </div>
-
   <!-- Monthly Donut Chart -->
   <div style="background:#fff;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
     <div style="font-size:15px;font-weight:800;text-align:right;margin-bottom:14px">🍕 לפי קטגוריות (החודש)</div>
@@ -501,6 +492,15 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
       <canvas id="donutChart" width="180" height="180"></canvas>
     </div>
     <div id="categoryLegend" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;direction:rtl"></div>
+  </div>
+
+  <!-- Yearly Donut Chart -->
+  <div style="background:#fff;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+    <div style="font-size:15px;font-weight:800;text-align:right;margin-bottom:14px">🍕 לפי קטגוריות (שנתי <span id="yearlyDonutYear"></span>)</div>
+    <div style="display:flex;justify-content:center;margin-bottom:16px">
+      <canvas id="yearlyDonutChart" width="180" height="180"></canvas>
+    </div>
+    <div id="yearlyDonutLegend" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;direction:rtl"></div>
   </div>
 
   <!-- Budget Progress -->
