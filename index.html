@@ -385,7 +385,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
       <button onclick="closeFolderView()" style="background:var(--bg);border-radius:12px;padding:8px 14px;font-size:13px;font-weight:700;color:var(--text)">← חזרה</button>
       <div style="font-size:18px;font-weight:800;color:var(--text)" id="docsCurrentFolderName"></div>
     </div>
-    <button onclick="openFileUpload()" style="width:100%;background:var(--plum-light);color:var(--plum);border-radius:14px;padding:12px;font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px">
+    <button onclick="openFileUpload()" style="width:100%;background:var(--plum);color:#fff;border-radius:16px;padding:16px;font-size:16px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(124,61,110,.35)">
       📎 העלה מסמך
     </button>
     <input type="file" id="docsFileInput" accept="image/*,application/pdf" style="display:none" onchange="handleFileUpload(this)">
@@ -1126,7 +1126,7 @@ window.switchPage=(name,btn)=>{
   if(btn)btn.classList.add('active');
   else document.querySelectorAll('.nav-btn').forEach(b=>{if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+name+"'"))b.classList.add('active');});
   const fab=document.getElementById('fab');
-  fab.style.display=name==='home'?'none':'flex';
+  fab.style.display=(name==='home'||name==='docs')?'none':'flex';
   fab.className='fab'+(name==='shopping'?' sage':'');
 };
 
