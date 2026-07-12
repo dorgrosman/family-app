@@ -3224,10 +3224,7 @@ window.toggleFileSelect=(fileId,folderId)=>{
 window.shareSelectedFiles=async()=>{
   const files=window._currentFiles.filter(f=>selectedFiles.has(f.id));
   if(!files.length)return;
-  const text=files.map(f=>f.name+'
-'+f.url).join('
-
-');
+  const text=files.map(f=>f.name+'\n'+f.url).join('\n\n');
   if(navigator.share){
     try{
       await navigator.share({title:'מסמכים משפחתיים',text});
