@@ -3176,21 +3176,16 @@ function renderFolderColorPicker(){
   });
 }
 
-window.downloadFile=async(url,name)=>{
-  try{
-    toast('⬇️ מוריד...');
-    const resp=await fetch(url);
-    const blob=await resp.blob();
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download=name;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
-    toast('✅ הורד בהצלחה!');
-  }catch(e){
-    toast('❌ שגיאה בהורדה');
-  }
+window.downloadFile=(url,name)=>{
+  // On mobile, open in new tab — user can then use browser's download option
+  const a=document.createElement('a');
+  a.href=url;
+  a.target='_blank';
+  a.rel='noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  toast('📄 נפתח בלשונית חדשה — לחץ הורד בדפדפן');
 };
 
 window.shareFile=async(url,name)=>{
