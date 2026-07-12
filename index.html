@@ -1431,6 +1431,35 @@ function renderCalendar(){
   upEl.innerHTML=upcoming.length?upcoming.map(evHTML).join(''):'<div class="empty-state" style="padding:20px 0">אין אירועים קרובים 📭</div>';
   if(homeEl)homeEl.innerHTML=upcoming.slice(0,3).map(e=>`<div class="home-event-card"><span class="home-event-icon">${e.emoji}</span><div><div class="home-event-title">${e.title}</div><div class="home-event-date">${(e.dateFrom||e.date||'').slice(8,10)}/${(e.dateFrom||e.date||'').slice(5,7)}${e.time?' • '+e.time:''}</div></div></div>`).join('');
 }
+function renderUpcoming(){
+  const now=new Date();
+  const todayStr=now.toISOString().slice(0,10);
+  const nowTime=now.getHours()*60+now.getMinutes();
+  const upcoming=events.filter(e=>{
+    const endDate=e.dateTo||e.dateFrom||e.date||'';
+    if(!endDate)return false;
+    if(endDate>todayStr)return true;
+    if(endDate<todayStr)return false;
+    if(!e.time)return true;
+    const [h,m]=e.time.split(':').map(Number);
+    return (h*60+m)>=nowTime;
+  }).sort((a,b)=>(a.dateFrom||a.date||'').localeCompare(b.dateFrom||b.date||'')).slice(0,8);
+  const upEl=document.getElementById('upcomingList');
+  const homeEl=document.getElementById('homeEvents');
+  if(document.getElementById('sumEvents'))document.getElementById('sumEvents').textContent=upcoming.length;
+  const evHTML=e=>`<div class="upcoming-event">
+    <div class="ev-icon-wrap" style="background:${e.color}22">${e.emoji}</div>
+    <div style="flex:1">
+      <div class="ev-title">${e.title}</div>
+      <div class="ev-meta">${(e.dateFrom||e.date||'').slice(8,10)}/${(e.dateFrom||e.date||'').slice(5,7)}${e.time?' • '+e.time:''}${e.owner?' • 👤'+e.owner:''}</div>
+    </div>
+    <button class="card-edit" onclick="editEvent('${e.id}')">✏️</button>
+    <button class="card-del" onclick="deleteEvent('${e.id}')">🗑️</button>
+  </div>`;
+  if(upEl)upEl.innerHTML=upcoming.length?upcoming.map(evHTML).join(''):'<div class="empty-state" style="padding:20px 0">אין אירועים קרובים 📭</div>';
+  if(homeEl)homeEl.innerHTML=upcoming.slice(0,3).map(e=>`<div class="home-event-card"><span class="home-event-icon">${e.emoji}</span><div><div class="home-event-title">${e.title}</div><div class="home-event-date">${(e.dateFrom||e.date||'').slice(8,10)}/${(e.dateFrom||e.date||'').slice(5,7)}${e.time?' • '+e.time:''}</div></div></div>`).join('');
+}
+
 window.calNav=dir=>{calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCalendar();};
 window.calDayTap=(d,ev)=>{
   const ds=calYear+'-'+pad(calMonth+1)+'-'+pad(d);
@@ -3099,11 +3128,11 @@ function renderFileList(folderId,files){
       :`<div class="docs-file-thumb">📄</div>`;
     return `<div class="docs-file-card" style="flex-direction:column;gap:10px;padding:14px 16px;border:2px solid ${isSelected?'var(--plum)':'transparent'};transition:border .15s">
       <div style="display:flex;align-items:center;gap:12px">
-        <div onclick="toggleFileSelect('${f.id}','${folderId}')" style="width:22px;height:22px;border-radius:6px;border:2px solid ${isSelected?'var(--plum)':'#ccc'};background:${isSelected?'var(--plum)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer">
-          ${isSelected?'<span style="color:#fff;font-size:14px">✓</span>':''}
+        <div onclick="toggleFileSelect('${f.id}','${folderId}')" style="width:22px;height:22px;min-width:22px;border-radius:6px;border:2px solid ${isSelected?'var(--plum)':'#ccc'};background:${isSelected?'var(--plum)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;align-self:center">
+          ${isSelected?'<span style="color:#fff;font-size:14px;line-height:1">✓</span>':''}
         </div>
-        ${thumb}
-        <div style="flex:1;min-width:0">
+        <div style="width:48px;min-width:48px;flex-shrink:0">${thumb}</div>
+        <div style="flex:1;min-width:0;overflow:hidden">
           <div style="font-size:14px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:3px">${new Date(f.createdAt).toLocaleDateString('he-IL')}</div>
         </div>
