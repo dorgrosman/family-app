@@ -3073,18 +3073,20 @@ async function renderFiles(folderId){
     const isImage=f.type&&f.type.startsWith('image/');
     const thumb=isImage?`<img src="${f.url}" class="docs-file-thumb" style="width:48px;height:48px;border-radius:10px;object-fit:cover">`
       :`<div class="docs-file-thumb">📄</div>`;
-    return `<div class="docs-file-card">
-      ${thumb}
-      <div style="flex:1;min-width:0">
-        <div style="font-size:14px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${new Date(f.createdAt).toLocaleDateString('he-IL')}</div>
+    return `<div class="docs-file-card" style="flex-direction:column;gap:10px;padding:14px 16px">
+      <div style="display:flex;align-items:center;gap:12px">
+        ${thumb}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px">${new Date(f.createdAt).toLocaleDateString('he-IL')}</div>
+        </div>
       </div>
-      <div style="display:flex;gap:6px;flex-shrink:0">
-        <a href="${f.url}" download="${f.name}" style="color:var(--plum);font-size:18px;padding:4px 6px" title="הורד">⬇️</a>
-        <button onclick="shareFile('${f.url}','${f.name}')" style="color:var(--plum);font-size:18px;padding:4px 6px" title="שתף">↗️</button>
-        <a href="${f.url}" target="_blank" style="color:var(--plum);font-size:13px;font-weight:700;padding:6px 10px;background:var(--plum-light);border-radius:10px">פתח</a>
-        <button onclick="renameFile('${folderId}','${f.id}')" style="color:var(--muted);font-size:16px;padding:4px 6px" title="שנה שם">✏️</button>
-        <button onclick="deleteFile('${folderId}','${f.id}','${f.storagePath}')" style="color:var(--muted);font-size:16px;padding:4px 6px" title="מחק">🗑️</button>
+      <div style="display:flex;gap:8px;width:100%">
+        <a href="${f.url}" target="_blank" style="flex:1;text-align:center;background:var(--plum);color:#fff;font-size:13px;font-weight:700;padding:9px 0;border-radius:12px">פתח</a>
+        <a href="${f.url}" download="${f.name}" style="flex:1;text-align:center;background:var(--bg);color:var(--text);font-size:13px;font-weight:700;padding:9px 0;border-radius:12px">⬇️ הורד</a>
+        <button onclick="shareFile('${f.url}','${f.name}')" style="flex:1;background:var(--bg);color:var(--text);font-size:13px;font-weight:700;padding:9px 0;border-radius:12px">🔗 שתף</button>
+        <button onclick="renameFile('${folderId}','${f.id}')" style="background:var(--bg);color:var(--muted);font-size:16px;padding:9px 10px;border-radius:12px">✏️</button>
+        <button onclick="deleteFile('${folderId}','${f.id}','${f.storagePath}')" style="background:var(--bg);color:#e53e3e;font-size:16px;padding:9px 10px;border-radius:12px">🗑️</button>
       </div>
     </div>`;
   }).join('');
