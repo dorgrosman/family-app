@@ -3224,14 +3224,14 @@ window.toggleFileSelect=(fileId,folderId)=>{
 window.shareSelectedFiles=async()=>{
   const files=window._currentFiles.filter(f=>selectedFiles.has(f.id));
   if(!files.length)return;
-  const text=files.map(f=>f.name+'\n'+f.url).join('\n\n');
+  const lines=files.map(f=>f.name+' - '+f.url);
+  const text=lines.join(', ');
   if(navigator.share){
-    try{
-      await navigator.share({title:'מסמכים משפחתיים',text});
-    }catch(e){if(e.name!=='AbortError')toast('❌ שגיאה בשיתוף');}
+    try{await navigator.share({title:'מסמכים משפחתיים',text});}
+    catch(e){if(e.name!=='AbortError')toast('שגיאה בשיתוף');}
   } else {
     await navigator.clipboard.writeText(text);
-    toast('🔗 '+files.length+' קישורים הועתקו!');
+    toast('קישורים הועתקו!');
   }
 };
 
