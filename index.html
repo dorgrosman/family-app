@@ -142,6 +142,13 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 
 /* ── CALENDAR ── */
 .cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.docs-folder-card { background: var(--card); border-radius: 20px; padding: 16px 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 14px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: transform .15s; }
+.docs-folder-card:active { transform: scale(.98); }
+.docs-folder-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+.docs-file-card { background: var(--card); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.docs-file-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; background: var(--bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 24px; }
+.docs-upload-progress { height: 4px; background: var(--plum-light); border-radius: 4px; margin-top: 8px; overflow: hidden; }
+.docs-upload-progress-bar { height: 100%; background: var(--plum); border-radius: 4px; transition: width .3s; }
 .status-btn { padding: 7px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: var(--bg); color: var(--muted); border: 2px solid transparent; transition: all .15s; cursor: pointer; }
 .status-btn.active { border-color: var(--plum); color: var(--plum); background: var(--plum-light); }
 .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
@@ -353,6 +360,36 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   <div class="cal-grid" id="calGrid"></div>
   <div class="home-section-title">📌 אירועים קרובים</div>
   <div id="upcomingList"></div>
+</div>
+
+<!-- ══ DOCS PAGE ══ -->
+<div class="page" id="page-docs">
+  <div class="page-header">
+    <div class="page-title">מסמכים 📁</div>
+    <div class="page-subtitle">מסמכים משפחתיים</div>
+  </div>
+
+  <!-- Folder view -->
+  <div id="docsFolderView">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <button onclick="openNewFolderSheet()" style="background:var(--plum);color:#fff;border-radius:14px;padding:9px 18px;font-size:13px;font-weight:700">+ תיקייה חדשה</button>
+      <div style="font-size:13px;color:var(--muted)" id="docsFolderCount"></div>
+    </div>
+    <div id="docsFolderList"></div>
+  </div>
+
+  <!-- Folder contents view -->
+  <div id="docsFileView" style="display:none">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <button onclick="closeFolderView()" style="background:var(--bg);border-radius:12px;padding:8px 14px;font-size:13px;font-weight:700;color:var(--text)">← חזרה</button>
+      <div style="font-size:18px;font-weight:800;color:var(--text)" id="docsCurrentFolderName"></div>
+    </div>
+    <button onclick="openFileUpload()" style="width:100%;background:var(--plum-light);color:var(--plum);border-radius:14px;padding:12px;font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px">
+      📎 העלה מסמך
+    </button>
+    <input type="file" id="docsFileInput" accept="image/*,application/pdf" style="display:none" onchange="handleFileUpload(this)">
+    <div id="docsFileList"></div>
+  </div>
 </div>
 
 <!-- ══ KIDS PAGE ══ -->
@@ -657,9 +694,9 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
     <div class="nav-icon-wrap"><span class="nav-icon">🛒</span></div>
     <span class="nav-label">קניות</span>
   </button>
-  <button type="button" class="nav-btn active" onclick="switchPage('home',this)">
-    <div class="nav-icon-wrap"><span class="nav-icon">🏠</span></div>
-    <span class="nav-label">בית</span>
+  <button type="button" class="nav-btn" onclick="switchPage('docs',this)">
+    <div class="nav-icon-wrap"><span class="nav-icon">📁</span></div>
+    <span class="nav-label">מסמכים</span>
   </button>
   <button class="nav-btn" onclick="switchPage('calendar',this)">
     <div class="nav-icon-wrap"><span class="nav-icon">📅</span></div>
@@ -989,10 +1026,12 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore,collection,onSnapshot,addDoc,updateDoc,deleteDoc,doc,setDoc,getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore,collection,onSnapshot,addDoc,updateDoc,deleteDoc,doc,setDoc,getDoc,getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getStorage,ref,uploadBytesResumable,getDownloadURL,deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const firebaseConfig={apiKey:"AIzaSyAXWgxjh4jH9Bd9zaQu0LPJwprEMfm4OFI",authDomain:"family-app-45d82.firebaseapp.com",projectId:"family-app-45d82",storageBucket:"family-app-45d82.firebasestorage.app",messagingSenderId:"811925409475",appId:"1:811925409475:web:d3b49f8908c1f582899c76"};
 const app=initializeApp(firebaseConfig);
+const storage=getStorage(app);
 const db=getFirestore(app);
 
 let myName='אני',partnerName='פרטנר';
@@ -2893,6 +2932,10 @@ window.requestNotifPermission=async()=>{
 function initListeners(){
   onSnapshot(collection(db,'tasks'),snap=>{tasks=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));renderTasks();});
   onSnapshot(collection(db,'shopping'),snap=>{shopping=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));renderShopping();});
+  onSnapshot(collection(db,'folders'),snap=>{
+    docFolders=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    renderFolders();
+  });
   onSnapshot(collection(db,'events'),snap=>{events=snap.docs.map(d=>({id:d.id,...d.data()}));renderCalendar();renderUpcoming();});
   onSnapshot(collection(db,'kids'),snap=>{kids=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));renderKids();});
   onSnapshot(collection(db,'expenses'),snap=>{expenses=snap.docs.map(d=>({id:d.id,...d.data()}));renderBudget();});
@@ -2945,6 +2988,168 @@ async function init(){
   setTimeout(()=>document.getElementById('loader').style.display='none',1200);
 }
 init();
+
+// ══ DOCS ══
+let docFolders=[],currentFolderId=null;
+
+function renderFolders(){
+  const el=document.getElementById('docsFolderList');
+  const countEl=document.getElementById('docsFolderCount');
+  if(!el)return;
+  if(countEl)countEl.textContent=docFolders.length+' תיקיות';
+  if(!docFolders.length){
+    el.innerHTML='<div class="empty-state">אין תיקיות עדיין 📁<br><span style="font-size:13px;color:var(--muted)">לחץ "+ תיקייה חדשה" כדי להתחיל</span></div>';
+    return;
+  }
+  el.innerHTML=docFolders.map(f=>`
+    <div class="docs-folder-card" onclick="openFolder('${f.id}')">
+      <div class="docs-folder-icon" style="background:${f.color}22">${f.emoji}</div>
+      <div style="flex:1">
+        <div style="font-size:16px;font-weight:700;color:var(--text)">${f.name}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${f.fileCount||0} מסמכים</div>
+      </div>
+      <button onclick="event.stopPropagation();deleteFolder('${f.id}')" style="color:var(--muted);font-size:18px;padding:4px 8px">🗑️</button>
+    </div>
+  `).join('');
+}
+
+window.openFolder=async(folderId)=>{
+  currentFolderId=folderId;
+  const folder=docFolders.find(f=>f.id===folderId);
+  document.getElementById('docsCurrentFolderName').textContent=(folder?.emoji||'📁')+' '+(folder?.name||'');
+  document.getElementById('docsFolderView').style.display='none';
+  document.getElementById('docsFileView').style.display='block';
+  renderFiles(folderId);
+};
+
+window.closeFolderView=()=>{
+  currentFolderId=null;
+  document.getElementById('docsFolderView').style.display='block';
+  document.getElementById('docsFileView').style.display='none';
+};
+
+async function renderFiles(folderId){
+  const el=document.getElementById('docsFileList');
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">טוען...</div>';
+  const snap=await getDocs(collection(db,'folders',folderId,'files'));
+  const files=snap.docs.map(d=>({id:d.id,...d.data()}));
+  if(!files.length){
+    el.innerHTML='<div class="empty-state">אין מסמכים בתיקייה זו 📄</div>';
+    return;
+  }
+  el.innerHTML=files.map(f=>{
+    const isImage=f.type&&f.type.startsWith('image/');
+    const thumb=isImage?`<img src="${f.url}" class="docs-file-thumb" style="width:48px;height:48px;border-radius:10px;object-fit:cover">`
+      :`<div class="docs-file-thumb">📄</div>`;
+    return `<div class="docs-file-card">
+      ${thumb}
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;color:var(--text)">${f.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${new Date(f.createdAt).toLocaleDateString('he-IL')}</div>
+      </div>
+      <a href="${f.url}" target="_blank" style="color:var(--plum);font-size:13px;font-weight:700;padding:6px 10px;background:var(--plum-light);border-radius:10px">פתח</a>
+      <button onclick="deleteFile('${folderId}','${f.id}','${f.storagePath}')" style="color:var(--muted);font-size:16px;margin-right:4px">🗑️</button>
+    </div>`;
+  }).join('');
+}
+
+window.openFileUpload=()=>document.getElementById('docsFileInput').click();
+
+window.handleFileUpload=async(input)=>{
+  const file=input.files[0];if(!file||!currentFolderId)return;
+  input.value='';
+  const el=document.getElementById('docsFileList');
+  const progressHTML=`<div id="uploadProgress" style="background:var(--card);border-radius:16px;padding:14px 16px;margin-bottom:10px">
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">⬆️ מעלה: ${file.name}</div>
+    <div class="docs-upload-progress"><div class="docs-upload-progress-bar" id="uploadBar" style="width:0%"></div></div>
+  </div>`;
+  el.innerHTML=progressHTML+el.innerHTML;
+
+  const path=`folders/${currentFolderId}/${Date.now()}_${file.name}`;
+  const storageRef=ref(storage,path);
+  const uploadTask=uploadBytesResumable(storageRef,file);
+
+  uploadTask.on('state_changed',
+    snap=>{const pct=Math.round(snap.bytesTransferred/snap.totalBytes*100);const bar=document.getElementById('uploadBar');if(bar)bar.style.width=pct+'%';},
+    err=>{toast('❌ שגיאה בהעלאה');document.getElementById('uploadProgress')?.remove();},
+    async()=>{
+      const url=await getDownloadURL(uploadTask.snapshot.ref);
+      await addDoc(collection(db,'folders',currentFolderId,'files'),{name:file.name,url,type:file.type,storagePath:path,createdAt:Date.now()});
+      // Update file count
+      const folder=docFolders.find(f=>f.id===currentFolderId);
+      if(folder)await updateDoc(doc(db,'folders',currentFolderId),{fileCount:(folder.fileCount||0)+1});
+      document.getElementById('uploadProgress')?.remove();
+      toast('✅ '+file.name+' הועלה!');
+      renderFiles(currentFolderId);
+    }
+  );
+};
+
+window.deleteFile=async(folderId,fileId,storagePath)=>{
+  if(!confirm('למחוק מסמך זה?'))return;
+  try{await deleteObject(ref(storage,storagePath));}catch(e){}
+  await deleteDoc(doc(db,'folders',folderId,'files',fileId));
+  const folder=docFolders.find(f=>f.id===folderId);
+  if(folder&&folder.fileCount>0)await updateDoc(doc(db,'folders',folderId),{fileCount:folder.fileCount-1});
+  toast('🗑️ נמחק');
+  renderFiles(folderId);
+};
+
+window.deleteFolder=async(folderId)=>{
+  if(!confirm('למחוק תיקייה זו ואת כל תכולתה?'))return;
+  await deleteDoc(doc(db,'folders',folderId));
+  toast('🗑️ תיקייה נמחקה');
+};
+
+// New folder sheet
+const FOLDER_EMOJIS=['📋','🪪','✈️','🚗','🏦','💊','🏠','📜','🎓','👶','💼','🔑'];
+const FOLDER_COLORS=['#7C3D6E','#4A7C6F','#E8736A','#3B82F6','#F59E0B','#10B981'];
+let newFolderEmoji='📋',newFolderColor='#7C3D6E';
+
+window.openNewFolderSheet=()=>{
+  newFolderEmoji='📋';newFolderColor='#7C3D6E';
+  document.getElementById('newFolderName').value='';
+  renderFolderEmojiPicker();renderFolderColorPicker();
+  activeSheet=document.getElementById('newFolderSheet');
+  document.getElementById('sheetBackdrop').classList.add('open');
+  activeSheet.classList.add('open');
+};
+
+function renderFolderEmojiPicker(){
+  document.getElementById('folderEmojiPicker').innerHTML=FOLDER_EMOJIS.map(e=>
+    `<button onclick="newFolderEmoji='${e}';renderFolderEmojiPicker()" style="font-size:24px;padding:6px;border-radius:10px;background:${newFolderEmoji===e?'var(--plum-light)':'transparent'}">${e}</button>`
+  ).join('');
+}
+function renderFolderColorPicker(){
+  document.getElementById('folderColorPicker').innerHTML=FOLDER_COLORS.map(c=>
+    `<button onclick="newFolderColor='${c}';renderFolderColorPicker()" style="width:28px;height:28px;border-radius:50%;background:${c};border:3px solid ${newFolderColor===c?'#333':'transparent'}"></button>`
+  ).join('');
+}
+
+window.saveNewFolder=async()=>{
+  const name=document.getElementById('newFolderName').value.trim();
+  if(!name)return toast('⚠️ הכנס שם לתיקייה');
+  await addDoc(collection(db,'folders'),{name,emoji:newFolderEmoji,color:newFolderColor,fileCount:0,createdAt:Date.now()});
+  closeSheet();
+  toast('📁 תיקייה נוצרה!');
+};
+
 </script>
+
+<!-- NEW FOLDER SHEET -->
+<div class="sheet" id="newFolderSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button class="sheet-close" onclick="closeSheet()">×</button>
+    <div class="sheet-title">תיקייה חדשה</div>
+  </div>
+  <div class="field-label">שם התיקייה</div>
+  <input class="input-field" id="newFolderName" placeholder="למשל: תעודות זהות, דרכונים...">
+  <div class="field-label">אייקון</div>
+  <div id="folderEmojiPicker" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:16px"></div>
+  <div class="field-label">צבע</div>
+  <div id="folderColorPicker" style="display:flex;gap:10px;margin-bottom:20px"></div>
+  <button class="btn-submit" onclick="saveNewFolder()">צור תיקייה</button>
+</div>
 </body>
 </html>
