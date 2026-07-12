@@ -3081,6 +3081,7 @@ async function renderFiles(folderId){
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
         <a href="${f.url}" download="${f.name}" style="color:var(--plum);font-size:18px;padding:4px 6px" title="הורד">⬇️</a>
+        <button onclick="shareFile('${f.url}','${f.name}')" style="color:var(--plum);font-size:18px;padding:4px 6px" title="שתף">↗️</button>
         <a href="${f.url}" target="_blank" style="color:var(--plum);font-size:13px;font-weight:700;padding:6px 10px;background:var(--plum-light);border-radius:10px">פתח</a>
         <button onclick="renameFile('${folderId}','${f.id}')" style="color:var(--muted);font-size:16px;padding:4px 6px" title="שנה שם">✏️</button>
         <button onclick="deleteFile('${folderId}','${f.id}','${f.storagePath}')" style="color:var(--muted);font-size:16px;padding:4px 6px" title="מחק">🗑️</button>
@@ -3172,6 +3173,24 @@ function renderFolderColorPicker(){
     btn.addEventListener('click',()=>{newFolderColor=btn.dataset.color;renderFolderColorPicker();});
   });
 }
+
+window.shareFile=async(url,name)=>{
+  if(navigator.share){
+    try{
+      await navigator.share({title:name,text:'שיתוף מסמך: '+name,url});
+    }catch(e){
+      if(e.name!=='AbortError')toast('❌ שגיאה בשיתוף');
+    }
+  } else {
+    // Fallback - copy URL to clipboard
+    try{
+      await navigator.clipboard.writeText(url);
+      toast('🔗 הקישור הועתק!');
+    }catch(e){
+      toast('❌ הדפדפן לא תומך בשיתוף');
+    }
+  }
+};
 
 window.renameFile=async(folderId,fileId)=>{
   const newName=prompt('שם חדש לקובץ:');
