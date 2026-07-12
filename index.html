@@ -273,6 +273,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 <!-- ══ HOME PAGE ══ -->
 <div class="page active" id="page-home">
   <div class="home-top">
+    <button onclick="logoutUser()" style="background:var(--bg);border-radius:12px;padding:7px 12px;font-size:12px;font-weight:600;color:var(--muted)">🚪 יציאה</button>
     <button class="home-logout" onclick="toggleEditNames()">✏️</button>
     <div class="home-greeting">
       <div class="home-hello">שלום! 👋</div>
@@ -685,6 +686,33 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 </div>
 
 <!-- ══ BOTTOM NAV ══ -->
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="position:fixed;inset:0;background:var(--bg);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;direction:rtl">
+  <div style="font-size:52px;margin-bottom:8px">🏠</div>
+  <div style="font-size:26px;font-weight:900;color:var(--text);margin-bottom:4px">Waabit Family</div>
+  <div style="font-size:14px;color:var(--muted);margin-bottom:40px">הבית שלנו</div>
+
+  <div style="width:100%;max-width:360px">
+    <!-- Google Sign In -->
+    <button onclick="loginWithGoogle()" style="width:100%;background:#fff;border:2px solid #e0e0e0;border-radius:16px;padding:14px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:15px;font-weight:700;color:#333;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:22px;height:22px">
+      התחברות עם Google
+    </button>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <div style="flex:1;height:1px;background:#e0e0e0"></div>
+      <div style="font-size:12px;color:var(--muted)">או</div>
+      <div style="flex:1;height:1px;background:#e0e0e0"></div>
+    </div>
+
+    <!-- Email/Password -->
+    <input id="loginEmail" type="email" placeholder="אימייל" style="width:100%;background:var(--card);border-radius:14px;padding:14px 16px;font-size:15px;color:var(--text);margin-bottom:10px;box-sizing:border-box;border:2px solid transparent" dir="ltr">
+    <input id="loginPassword" type="password" placeholder="סיסמה" style="width:100%;background:var(--card);border-radius:14px;padding:14px 16px;font-size:15px;color:var(--text);margin-bottom:16px;box-sizing:border-box;border:2px solid transparent" dir="ltr">
+    <button onclick="loginWithEmail()" style="width:100%;background:var(--plum);color:#fff;border-radius:16px;padding:15px;font-size:16px;font-weight:800;margin-bottom:12px">כניסה</button>
+    <div id="loginError" style="color:#e53e3e;font-size:13px;text-align:center;min-height:20px"></div>
+  </div>
+</div>
+
 <nav class="bottom-nav">
   <button class="nav-btn" onclick="switchPage('tasks',this)">
     <div class="nav-icon-wrap"><span class="nav-icon">☑️</span></div>
@@ -1028,10 +1056,13 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore,collection,onSnapshot,addDoc,updateDoc,deleteDoc,doc,setDoc,getDoc,getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getStorage,ref,uploadBytesResumable,getDownloadURL,deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+import { getAuth,onAuthStateChanged,signInWithEmailAndPassword,signInWithPopup,GoogleAuthProvider,signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig={apiKey:"AIzaSyAXWgxjh4jH9Bd9zaQu0LPJwprEMfm4OFI",authDomain:"family-app-45d82.firebaseapp.com",projectId:"family-app-45d82",storageBucket:"family-app-45d82.firebasestorage.app",messagingSenderId:"811925409475",appId:"1:811925409475:web:d3b49f8908c1f582899c76"};
 const app=initializeApp(firebaseConfig);
 const storage=getStorage(app);
+const auth=getAuth(app);
+const googleProvider=new GoogleAuthProvider();
 const db=getFirestore(app);
 
 let myName='אני',partnerName='פרטנר';
@@ -2932,11 +2963,17 @@ window.requestNotifPermission=async()=>{
 function initListeners(){
   onSnapshot(collection(db,'tasks'),snap=>{tasks=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));renderTasks();});
   onSnapshot(collection(db,'shopping'),snap=>{shopping=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));renderShopping();});
+  // Start all Firestore listeners (called after auth confirmed)
+  window._listenersStarted=false;
+  function startListeners(){
+    if(window._listenersStarted)return;
+    window._listenersStarted=true;
   onSnapshot(collection(db,'folders'),snap=>{
     docFolders=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
     renderFolders();
   });
   onSnapshot(collection(db,'events'),snap=>{events=snap.docs.map(d=>({id:d.id,...d.data()}));renderCalendar();renderUpcoming();});
+  } // end startListeners
   onSnapshot(collection(db,'kids'),snap=>{kids=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));renderKids();});
   onSnapshot(collection(db,'expenses'),snap=>{expenses=snap.docs.map(d=>({id:d.id,...d.data()}));renderBudget();});
   onSnapshot(collection(db,'recurring'),snap=>{
@@ -3181,6 +3218,44 @@ window.saveNewFolder=async()=>{
   }
 };
 
+
+// ══ AUTH ══
+window.loginWithGoogle=async()=>{
+  try{
+    document.getElementById('loginError').textContent='';
+    await signInWithPopup(auth,googleProvider);
+  }catch(e){
+    document.getElementById('loginError').textContent='שגיאה: '+e.message;
+  }
+};
+
+window.loginWithEmail=async()=>{
+  const email=document.getElementById('loginEmail').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  if(!email||!password)return document.getElementById('loginError').textContent='נא למלא אימייל וסיסמה';
+  try{
+    document.getElementById('loginError').textContent='';
+    await signInWithEmailAndPassword(auth,email,password);
+  }catch(e){
+    const msgs={'auth/invalid-credential':'אימייל או סיסמה שגויים','auth/user-not-found':'משתמש לא קיים','auth/wrong-password':'סיסמה שגויה'};
+    document.getElementById('loginError').textContent=msgs[e.code]||'שגיאה בהתחברות';
+  }
+};
+
+window.logoutUser=async()=>{
+  if(confirm('להתנתק?'))await signOut(auth);
+};
+
+onAuthStateChanged(auth,user=>{
+  const loginScreen=document.getElementById('loginScreen');
+  if(user){
+    loginScreen.style.display='none';
+    startListeners();
+  } else {
+    loginScreen.style.display='flex';
+    window._listenersStarted=false;
+  }
+});
 </script>
 
 <!-- NEW/EDIT FOLDER SHEET -->
