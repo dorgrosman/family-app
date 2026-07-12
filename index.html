@@ -3008,6 +3008,7 @@ function renderFolders(){
         <div style="font-size:16px;font-weight:700;color:var(--text)">${f.name}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">${f.fileCount||0} מסמכים</div>
       </div>
+      <button onclick="event.stopPropagation();openEditFolderSheet('${f.id}')" style="color:var(--muted);font-size:18px;padding:4px 8px">✏️</button>
       <button onclick="event.stopPropagation();deleteFolder('${f.id}')" style="color:var(--muted);font-size:18px;padding:4px 8px">🗑️</button>
     </div>
   `).join('');
@@ -3043,12 +3044,16 @@ async function renderFiles(folderId){
       :`<div class="docs-file-thumb">📄</div>`;
     return `<div class="docs-file-card">
       ${thumb}
-      <div style="flex:1">
-        <div style="font-size:14px;font-weight:700;color:var(--text)">${f.name}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${new Date(f.createdAt).toLocaleDateString('he-IL')}</div>
       </div>
-      <a href="${f.url}" target="_blank" style="color:var(--plum);font-size:13px;font-weight:700;padding:6px 10px;background:var(--plum-light);border-radius:10px">פתח</a>
-      <button onclick="deleteFile('${folderId}','${f.id}','${f.storagePath}')" style="color:var(--muted);font-size:16px;margin-right:4px">🗑️</button>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <a href="${f.url}" download="${f.name}" style="color:var(--plum);font-size:18px;padding:4px 6px" title="הורד">⬇️</a>
+        <a href="${f.url}" target="_blank" style="color:var(--plum);font-size:13px;font-weight:700;padding:6px 10px;background:var(--plum-light);border-radius:10px">פתח</a>
+        <button onclick="renameFile('${folderId}','${f.id}')" style="color:var(--muted);font-size:16px;padding:4px 6px" title="שנה שם">✏️</button>
+        <button onclick="deleteFile('${folderId}','${f.id}','${f.storagePath}')" style="color:var(--muted);font-size:16px;padding:4px 6px" title="מחק">🗑️</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -3107,8 +3112,11 @@ const FOLDER_COLORS=['#7C3D6E','#4A7C6F','#E8736A','#3B82F6','#F59E0B','#10B981'
 let newFolderEmoji='📋',newFolderColor='#7C3D6E';
 
 window.openNewFolderSheet=()=>{
+  editingFolderId=null;
   newFolderEmoji='📋';newFolderColor='#7C3D6E';
   document.getElementById('newFolderName').value='';
+  document.getElementById('newFolderSheetTitle').textContent='תיקייה חדשה';
+  document.getElementById('newFolderSaveBtn').textContent='צור תיקייה';
   renderFolderEmojiPicker();renderFolderColorPicker();
   activeSheet=document.getElementById('newFolderSheet');
   document.getElementById('sheetBackdrop').classList.add('open');
@@ -3116,32 +3124,71 @@ window.openNewFolderSheet=()=>{
 };
 
 function renderFolderEmojiPicker(){
-  document.getElementById('folderEmojiPicker').innerHTML=FOLDER_EMOJIS.map(e=>
-    `<button onclick="newFolderEmoji='${e}';renderFolderEmojiPicker()" style="font-size:24px;padding:6px;border-radius:10px;background:${newFolderEmoji===e?'var(--plum-light)':'transparent'}">${e}</button>`
-  ).join('');
+  document.getElementById('folderEmojiPicker').innerHTML=FOLDER_EMOJIS.map(e=>{
+    const sel=newFolderEmoji===e;
+    return `<button data-emoji="${e}" style="font-size:24px;padding:6px;border-radius:10px;background:${sel?'var(--plum-light)':'transparent'}">${e}</button>`;
+  }).join('');
+  document.getElementById('folderEmojiPicker').querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click',()=>{newFolderEmoji=btn.dataset.emoji;renderFolderEmojiPicker();});
+  });
 }
 function renderFolderColorPicker(){
-  document.getElementById('folderColorPicker').innerHTML=FOLDER_COLORS.map(c=>
-    `<button onclick="newFolderColor='${c}';renderFolderColorPicker()" style="width:28px;height:28px;border-radius:50%;background:${c};border:3px solid ${newFolderColor===c?'#333':'transparent'}"></button>`
-  ).join('');
+  document.getElementById('folderColorPicker').innerHTML=FOLDER_COLORS.map(c=>{
+    const sel=newFolderColor===c;
+    return `<button data-color="${c}" style="width:28px;height:28px;border-radius:50%;background:${c};border:3px solid ${sel?'#333':'transparent'}"></button>`;
+  }).join('');
+  document.getElementById('folderColorPicker').querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click',()=>{newFolderColor=btn.dataset.color;renderFolderColorPicker();});
+  });
 }
+
+window.renameFile=async(folderId,fileId)=>{
+  const newName=prompt('שם חדש לקובץ:');
+  if(!newName||!newName.trim())return;
+  await updateDoc(doc(db,'folders',folderId,'files',fileId),{name:newName.trim()});
+  toast('✅ שם עודכן');
+  renderFiles(folderId);
+};
+
+let editingFolderId=null;
+window.openEditFolderSheet=(folderId)=>{
+  editingFolderId=folderId;
+  const folder=docFolders.find(f=>f.id===folderId);
+  if(!folder)return;
+  newFolderEmoji=folder.emoji||'📋';
+  newFolderColor=folder.color||'#7C3D6E';
+  document.getElementById('newFolderName').value=folder.name;
+  document.getElementById('newFolderSheetTitle').textContent='עריכת תיקייה';
+  document.getElementById('newFolderSaveBtn').textContent='שמור שינויים';
+  renderFolderEmojiPicker();renderFolderColorPicker();
+  activeSheet=document.getElementById('newFolderSheet');
+  document.getElementById('sheetBackdrop').classList.add('open');
+  activeSheet.classList.add('open');
+};
 
 window.saveNewFolder=async()=>{
   const name=document.getElementById('newFolderName').value.trim();
   if(!name)return toast('⚠️ הכנס שם לתיקייה');
-  await addDoc(collection(db,'folders'),{name,emoji:newFolderEmoji,color:newFolderColor,fileCount:0,createdAt:Date.now()});
-  closeSheet();
-  toast('📁 תיקייה נוצרה!');
+  if(editingFolderId){
+    await updateDoc(doc(db,'folders',editingFolderId),{name,emoji:newFolderEmoji,color:newFolderColor});
+    editingFolderId=null;
+    closeSheet();
+    toast('✅ תיקייה עודכנה!');
+  } else {
+    await addDoc(collection(db,'folders'),{name,emoji:newFolderEmoji,color:newFolderColor,fileCount:0,createdAt:Date.now()});
+    closeSheet();
+    toast('📁 תיקייה נוצרה!');
+  }
 };
 
 </script>
 
-<!-- NEW FOLDER SHEET -->
+<!-- NEW/EDIT FOLDER SHEET -->
 <div class="sheet" id="newFolderSheet">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
     <button class="sheet-close" onclick="closeSheet()">×</button>
-    <div class="sheet-title">תיקייה חדשה</div>
+    <div class="sheet-title" id="newFolderSheetTitle">תיקייה חדשה</div>
   </div>
   <div class="field-label">שם התיקייה</div>
   <input class="input-field" id="newFolderName" placeholder="למשל: תעודות זהות, דרכונים...">
@@ -3149,7 +3196,7 @@ window.saveNewFolder=async()=>{
   <div id="folderEmojiPicker" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:16px"></div>
   <div class="field-label">צבע</div>
   <div id="folderColorPicker" style="display:flex;gap:10px;margin-bottom:20px"></div>
-  <button class="btn-submit" onclick="saveNewFolder()">צור תיקייה</button>
+  <button class="btn-submit" id="newFolderSaveBtn" onclick="saveNewFolder()">צור תיקייה</button>
 </div>
 </body>
 </html>
