@@ -1460,6 +1460,16 @@ function renderUpcoming(){
   if(homeEl)homeEl.innerHTML=upcoming.slice(0,3).map(e=>`<div class="home-event-card"><span class="home-event-icon">${e.emoji}</span><div><div class="home-event-title">${e.title}</div><div class="home-event-date">${(e.dateFrom||e.date||'').slice(8,10)}/${(e.dateFrom||e.date||'').slice(5,7)}${e.time?' • '+e.time:''}</div></div></div>`).join('');
 }
 
+window.selectBudgetMonth=(month)=>{
+  budgetMonth=month;
+  renderBudget();
+  // Scroll to transactions
+  setTimeout(()=>{
+    const el=document.getElementById('budgetTxList');
+    if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+  },300);
+};
+
 window.calNav=dir=>{calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCalendar();};
 window.calDayTap=(d,ev)=>{
   const ds=calYear+'-'+pad(calMonth+1)+'-'+pad(d);
@@ -2698,8 +2708,8 @@ function renderBarChart(year){
     ${months.map((m,i)=>{
       const h=m.total?Math.max(6,Math.round(m.total/maxVal*100)):3;
       const isActive=i===budgetMonth;
-      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
-        <span style="font-size:8px;color:var(--muted);white-space:nowrap">${m.total?fmt(m.total):''}</span>
+      return `<div onclick="selectBudgetMonth(${i})" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border-radius:6px;padding:2px 0;transition:background .15s" onmouseenter="this.style.background='rgba(124,61,110,.08)'" onmouseleave="this.style.background='transparent'">
+        <span style="font-size:8px;color:${isActive?'var(--plum)':'var(--muted)'};white-space:nowrap;font-weight:${isActive?700:400}">${m.total?fmt(m.total):''}</span>
         <div style="width:100%;height:${h}px;background:${isActive?'var(--plum)':'var(--plum-light)'};border-radius:4px 4px 0 0;transition:all .3s"></div>
         <span style="font-size:9px;color:${isActive?'var(--plum)':'var(--muted)'};font-weight:${isActive?700:400}">${m.label}</span>
       </div>`;
