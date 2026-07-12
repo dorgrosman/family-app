@@ -707,7 +707,10 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 
     <!-- Email/Password -->
     <input id="loginEmail" type="email" placeholder="אימייל" style="width:100%;background:var(--card);border-radius:14px;padding:14px 16px;font-size:15px;color:var(--text);margin-bottom:10px;box-sizing:border-box;border:2px solid transparent" dir="ltr">
-    <input id="loginPassword" type="password" placeholder="סיסמה" style="width:100%;background:var(--card);border-radius:14px;padding:14px 16px;font-size:15px;color:var(--text);margin-bottom:16px;box-sizing:border-box;border:2px solid transparent" dir="ltr">
+    <div style="position:relative;margin-bottom:16px">
+      <input id="loginPassword" type="password" placeholder="סיסמה" style="width:100%;background:var(--card);border-radius:14px;padding:14px 48px 14px 16px;font-size:15px;color:var(--text);box-sizing:border-box;border:2px solid transparent" dir="ltr">
+      <button type="button" onclick="const i=document.getElementById('loginPassword');const b=this;i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'👁️':'🙈'" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--muted);background:transparent">👁️</button>
+    </div>
     <button onclick="loginWithEmail()" style="width:100%;background:var(--plum);color:#fff;border-radius:16px;padding:15px;font-size:16px;font-weight:800;margin-bottom:12px">כניסה</button>
     <div id="loginError" style="color:#e53e3e;font-size:13px;text-align:center;min-height:20px"></div>
   </div>
@@ -2963,17 +2966,8 @@ window.requestNotifPermission=async()=>{
 function initListeners(){
   onSnapshot(collection(db,'tasks'),snap=>{tasks=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));renderTasks();});
   onSnapshot(collection(db,'shopping'),snap=>{shopping=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));renderShopping();});
-  // Start all Firestore listeners (called after auth confirmed)
-  window._listenersStarted=false;
-  function startListeners(){
-    if(window._listenersStarted)return;
-    window._listenersStarted=true;
-  onSnapshot(collection(db,'folders'),snap=>{
-    docFolders=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
-    renderFolders();
-  });
+  onSnapshot(collection(db,'folders'),snap=>{docFolders=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));renderFolders();});
   onSnapshot(collection(db,'events'),snap=>{events=snap.docs.map(d=>({id:d.id,...d.data()}));renderCalendar();renderUpcoming();});
-  } // end startListeners
   onSnapshot(collection(db,'kids'),snap=>{kids=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));renderKids();});
   onSnapshot(collection(db,'expenses'),snap=>{expenses=snap.docs.map(d=>({id:d.id,...d.data()}));renderBudget();});
   onSnapshot(collection(db,'recurring'),snap=>{
@@ -3016,7 +3010,7 @@ async function init(){
   // Service worker removed to fix Android install issue
   updateHomeDate();
   await loadNames();updateNamesUI();
-  initListeners();
+  // initListeners() is now called from onAuthStateChanged after login
   setTimeout(()=>{
     if(!('Notification'in window))return;
     if(Notification.permission==='default')document.getElementById('notifBanner').style.display='flex';
@@ -3250,10 +3244,12 @@ onAuthStateChanged(auth,user=>{
   const loginScreen=document.getElementById('loginScreen');
   if(user){
     loginScreen.style.display='none';
-    startListeners();
+    if(!window._listenersStarted){
+      window._listenersStarted=true;
+      initListeners();
+    }
   } else {
     loginScreen.style.display='flex';
-    window._listenersStarted=false;
   }
 });
 </script>
