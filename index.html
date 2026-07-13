@@ -223,6 +223,10 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 .nav-icon { font-size: 20px; line-height: 1; }
 .nav-label { font-size: 10px; font-weight: 600; }
 .nav-btn.active .nav-label { font-weight: 700; color: var(--plum); }
+.nav-home .nav-icon-wrap { background: var(--plum); box-shadow: 0 4px 12px rgba(124,61,110,.35); transform: translateY(-6px); width: 46px; height: 46px; border-radius: 16px; }
+.nav-home .nav-icon { font-size: 24px; }
+.nav-home .nav-label { margin-top: -2px; }
+.nav-home.active .nav-icon-wrap { background: var(--plum); }
 
 /* ── SHEET ── */
 .sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; opacity: 0; pointer-events: none; transition: opacity .2s; }
@@ -727,17 +731,17 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
     <div class="nav-icon-wrap"><span class="nav-icon">🛒</span></div>
     <span class="nav-label">קניות</span>
   </button>
-  <button type="button" class="nav-btn active" onclick="switchPage('home',this)">
+  <button class="nav-btn" onclick="switchPage('calendar',this)">
+    <div class="nav-icon-wrap"><span class="nav-icon">📅</span></div>
+    <span class="nav-label">לוח שנה</span>
+  </button>
+  <button type="button" class="nav-btn nav-home active" onclick="switchPage('home',this)">
     <div class="nav-icon-wrap"><span class="nav-icon">🏠</span></div>
     <span class="nav-label">בית</span>
   </button>
   <button type="button" class="nav-btn" onclick="switchPage('docs',this)">
     <div class="nav-icon-wrap"><span class="nav-icon">📁</span></div>
     <span class="nav-label">מסמכים</span>
-  </button>
-  <button class="nav-btn" onclick="switchPage('calendar',this)">
-    <div class="nav-icon-wrap"><span class="nav-icon">📅</span></div>
-    <span class="nav-label">לוח שנה</span>
   </button>
   <button class="nav-btn" onclick="switchPage('budget',this)">
     <div class="nav-icon-wrap"><span class="nav-icon">💰</span></div>
@@ -3314,31 +3318,42 @@ window.shareSelectedOneByOne=async()=>{
   const files=window._currentFiles.filter(f=>selectedFiles.has(f.id));
   if(!files.length)return;
   if(files.length===1){await shareFile(files[0].url,files[0].name);return;}
+  if(typeof JSZip==='undefined'){toast('❌ ספריית ZIP לא נטענה');return;}
   try{
-    toast('⏳ מכין קובץ ZIP...');
+    toast('⏳ מכין '+files.length+' קבצים...');
     const zip=new JSZip();
     for(const f of files){
       const resp=await fetch(f.url);
+      if(!resp.ok)throw new Error('fetch '+resp.status+': '+f.name);
       const blob=await resp.blob();
       zip.file(f.name,blob);
     }
-    toast('📦 אורז קבצים...');
+    toast('📦 אורז...');
     const zipBlob=await zip.generateAsync({type:'blob'});
-    const zipFile=new File([zipBlob],'מסמכים.zip',{type:'application/zip'});
-    if(navigator.canShare&&navigator.canShare({files:[zipFile]})){
-      await navigator.share({files:[zipFile],title:'מסמכים משפחתיים'});
-    } else {
+    const zipName='documents.zip';
+    let sharedOk=false;
+    try{
+      const zipFile=new File([zipBlob],zipName,{type:'application/zip'});
+      if(navigator.canShare&&navigator.canShare({files:[zipFile]})){
+        await navigator.share({files:[zipFile],title:'מסמכים'});
+        sharedOk=true;
+      }
+    }catch(shareErr){
+      if(shareErr.name==='AbortError')return;
+      console.error('share failed',shareErr);
+    }
+    if(!sharedOk){
       const a=document.createElement('a');
       a.href=URL.createObjectURL(zipBlob);
-      a.download='מסמכים.zip';
+      a.download=zipName;
       document.body.appendChild(a);
       a.click();
       setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
       toast('✅ ZIP הורד!');
     }
   }catch(e){
-    console.error(e);
-    toast('❌ שגיאה ביצירת ZIP');
+    console.error('ZIP error',e);
+    toast('❌ ZIP: '+(e.message||e.name||'שגיאה'));
   }
 };
 
