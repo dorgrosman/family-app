@@ -385,9 +385,10 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
       <button onclick="closeFolderView()" style="background:var(--bg);border-radius:12px;padding:8px 14px;font-size:13px;font-weight:700;color:var(--text)">← חזרה</button>
       <div style="font-size:18px;font-weight:800;color:var(--text)" id="docsCurrentFolderName"></div>
     </div>
-    <button onclick="openFileUpload()" style="width:100%;background:var(--plum);color:#fff;border-radius:16px;padding:16px;font-size:16px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(124,61,110,.35)">
+    <button onclick="openFileUpload()" style="width:100%;background:var(--plum);color:#fff;border-radius:16px;padding:16px;font-size:16px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(124,61,110,.35)">
       📎 העלה מסמך
     </button>
+    <button onclick="selectAllFiles()" id="selectAllBtn" style="width:100%;background:var(--bg);color:var(--plum);border-radius:14px;padding:10px;font-size:14px;font-weight:700;margin-bottom:16px;border:2px solid var(--plum-light)">☑️ בחר הכל</button>
     <input type="file" id="docsFileInput" accept="image/*,application/pdf" style="display:none" onchange="handleFileUpload(this)">
     <div id="docsFileList"></div>
   </div>
@@ -3084,8 +3085,25 @@ function renderFolders(){
   `).join('');
 }
 
+window.selectAllFiles=()=>{
+  const files=window._currentFiles||[];
+  if(!files.length)return;
+  if(selectedFiles.size===files.length){
+    // Deselect all
+    selectedFiles.clear();
+    window._isSelecting=false;
+  } else {
+    // Select all
+    window._isSelecting=true;
+    files.forEach(f=>selectedFiles.add(f.id));
+  }
+  renderFileList(currentFolderId,files);
+};
+
 window.openFolder=async(folderId)=>{
   currentFolderId=folderId;
+  selectedFiles.clear();
+  window._isSelecting=false;
   const folder=docFolders.find(f=>f.id===folderId);
   document.getElementById('docsCurrentFolderName').textContent=(folder?.emoji||'📁')+' '+(folder?.name||'');
   document.getElementById('docsFolderView').style.display='none';
