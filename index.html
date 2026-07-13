@@ -3318,8 +3318,7 @@ window.shareSelectedFiles=async()=>{
       await navigator.share({files:fileObjs,title:'מסמכים משפחתיים'});
     } else {
       // Fallback - share URLs
-      const text=files.map(f=>f.name+': '+f.url).join('
-');
+      const text=files.map(f=>f.name+': '+f.url).join(', ');
       await navigator.clipboard.writeText(text);
       toast('🔗 קישורים הועתקו!');
     }
