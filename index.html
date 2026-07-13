@@ -3307,23 +3307,34 @@ window.toggleFileSelect=(fileId,folderId)=>{
 window.shareSelectedFiles=async()=>{
   const files=window._currentFiles.filter(f=>selectedFiles.has(f.id));
   if(!files.length)return;
-  try{
-    toast('⏳ מכין קבצים לשיתוף...');
-    const fileObjs=await Promise.all(files.map(async f=>{
+  if(files.length===1){
+    await shareFile(files[0].url,files[0].name);
+    return;
+  }
+  // Share one by one
+  toast('⏳ מכין '+files.length+' קבצים...');
+  let shared=0;
+  for(const f of files){
+    try{
       const resp=await fetch(f.url);
       const blob=await resp.blob();
-      return new File([blob],f.name,{type:blob.type});
-    }));
-    if(navigator.canShare&&navigator.canShare({files:fileObjs})){
-      await navigator.share({files:fileObjs,title:'מסמכים משפחתיים'});
-    } else {
-      // Fallback - share URLs
-      const text=files.map(f=>f.name+': '+f.url).join(', ');
-      await navigator.clipboard.writeText(text);
-      toast('🔗 קישורים הועתקו!');
+      const fileObj=new File([blob],f.name,{type:blob.type});
+      if(navigator.canShare&&navigator.canShare({files:[fileObj]})){
+        await navigator.share({files:[fileObj],title:f.name});
+        shared++;
+      }
+    }catch(e){
+      if(e.name==='AbortError')break;
     }
-  }catch(e){
-    if(e.name!=='AbortError')toast('❌ שגיאה בשיתוף');
+  }
+  if(shared>0)toast('✅ שותפו '+shared+' קבצים');
+  else{
+    // Fallback - copy all URLs
+    try{
+      const text=files.map(f=>f.name+': '+f.url).join(' | ');
+      await navigator.clipboard.writeText(text);
+      toast('🔗 '+files.length+' קישורים הועתקו!');
+    }catch(e){toast('❌ שגיאה בשיתוף');}
   }
 };
 
