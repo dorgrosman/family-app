@@ -3307,32 +3307,43 @@ window.toggleFileSelect=(fileId,folderId)=>{
 window.shareSelectedFiles=async()=>{
   const files=window._currentFiles.filter(f=>selectedFiles.has(f.id));
   if(!files.length)return;
-  const lines=files.map(f=>f.name+' - '+f.url);
-  const text=lines.join(', ');
-  if(navigator.share){
-    try{await navigator.share({title:'מסמכים משפחתיים',text});}
-    catch(e){if(e.name!=='AbortError')toast('שגיאה בשיתוף');}
-  } else {
-    await navigator.clipboard.writeText(text);
-    toast('קישורים הועתקו!');
+  try{
+    toast('⏳ מכין קבצים לשיתוף...');
+    const fileObjs=await Promise.all(files.map(async f=>{
+      const resp=await fetch(f.url);
+      const blob=await resp.blob();
+      return new File([blob],f.name,{type:blob.type});
+    }));
+    if(navigator.canShare&&navigator.canShare({files:fileObjs})){
+      await navigator.share({files:fileObjs,title:'מסמכים משפחתיים'});
+    } else {
+      // Fallback - share URLs
+      const text=files.map(f=>f.name+': '+f.url).join('
+');
+      await navigator.clipboard.writeText(text);
+      toast('🔗 קישורים הועתקו!');
+    }
+  }catch(e){
+    if(e.name!=='AbortError')toast('❌ שגיאה בשיתוף');
   }
 };
 
 window.shareFile=async(url,name)=>{
-  if(navigator.share){
-    try{
-      await navigator.share({title:name,text:'שיתוף מסמך: '+name,url});
-    }catch(e){
-      if(e.name!=='AbortError')toast('❌ שגיאה בשיתוף');
-    }
-  } else {
-    // Fallback - copy URL to clipboard
-    try{
+  try{
+    toast('⏳ מכין לשיתוף...');
+    const resp=await fetch(url);
+    const blob=await resp.blob();
+    const file=new File([blob],name,{type:blob.type});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:name});
+    } else if(navigator.share){
+      await navigator.share({title:name,url});
+    } else {
       await navigator.clipboard.writeText(url);
       toast('🔗 הקישור הועתק!');
-    }catch(e){
-      toast('❌ הדפדפן לא תומך בשיתוף');
     }
+  }catch(e){
+    if(e.name!=='AbortError')toast('❌ שגיאה בשיתוף');
   }
 };
 
