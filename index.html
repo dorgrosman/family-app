@@ -262,6 +262,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 #notifBanner { display: none; position: fixed; top: calc(60px + var(--safe-top)); left: 12px; right: 12px; z-index: 150; background: var(--sage); color: #fff; border-radius: 16px; padding: 12px 16px; align-items: center; gap: 10px; box-shadow: 0 4px 20px rgba(74,124,111,.3); }
 #notifBanner.show { display: flex; }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
@@ -725,6 +726,10 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   <button class="nav-btn" onclick="switchPage('shopping',this)">
     <div class="nav-icon-wrap"><span class="nav-icon">🛒</span></div>
     <span class="nav-label">קניות</span>
+  </button>
+  <button type="button" class="nav-btn active" onclick="switchPage('home',this)">
+    <div class="nav-icon-wrap"><span class="nav-icon">🏠</span></div>
+    <span class="nav-label">בית</span>
   </button>
   <button type="button" class="nav-btn" onclick="switchPage('docs',this)">
     <div class="nav-icon-wrap"><span class="nav-icon">📁</span></div>
@@ -3145,7 +3150,7 @@ function renderFileList(folderId,files){
       <span style="color:#fff;font-size:13px;font-weight:700">${selectedFiles.size} נבחרו</span>
       <div style="display:flex;gap:8px">
         <button onclick="shareSelectedFiles()" style="background:#fff;color:var(--plum);border-radius:10px;padding:7px 10px;font-size:13px;font-weight:800">⬇️ הורד</button>
-        <button onclick="shareSelectedOneByOne()" style="background:rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700">🔗 שתף</button>
+        <button onclick="shareSelectedOneByOne()" style="background:rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700">📦 ZIP ושתף</button>
         <button onclick="selectedFiles.clear();window._isSelecting=false;renderFileList('${folderId}',window._currentFiles)" style="background:rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:7px 10px;font-size:13px">ביטול</button>
       </div>
     </div>`:'';
@@ -3308,22 +3313,33 @@ window.toggleFileSelect=(fileId,folderId)=>{
 window.shareSelectedOneByOne=async()=>{
   const files=window._currentFiles.filter(f=>selectedFiles.has(f.id));
   if(!files.length)return;
-  for(const f of files){
-    try{
-      toast('⏳ מכין: '+f.name);
+  if(files.length===1){await shareFile(files[0].url,files[0].name);return;}
+  try{
+    toast('⏳ מכין קובץ ZIP...');
+    const zip=new JSZip();
+    for(const f of files){
       const resp=await fetch(f.url);
       const blob=await resp.blob();
-      const fileObj=new File([blob],f.name,{type:blob.type});
-      if(navigator.canShare&&navigator.canShare({files:[fileObj]})){
-        await navigator.share({files:[fileObj],title:f.name});
-      } else if(navigator.share){
-        await navigator.share({title:f.name,url:f.url});
-      }
-    }catch(e){
-      if(e.name==='AbortError')break;
+      zip.file(f.name,blob);
     }
+    toast('📦 אורז קבצים...');
+    const zipBlob=await zip.generateAsync({type:'blob'});
+    const zipFile=new File([zipBlob],'מסמכים.zip',{type:'application/zip'});
+    if(navigator.canShare&&navigator.canShare({files:[zipFile]})){
+      await navigator.share({files:[zipFile],title:'מסמכים משפחתיים'});
+    } else {
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(zipBlob);
+      a.download='מסמכים.zip';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
+      toast('✅ ZIP הורד!');
+    }
+  }catch(e){
+    console.error(e);
+    toast('❌ שגיאה ביצירת ZIP');
   }
-  toast('✅ סיום שיתוף');
 };
 
 window.shareSelectedFiles=async()=>{
