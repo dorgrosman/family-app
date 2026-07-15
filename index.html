@@ -92,10 +92,14 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 
 /* ── CARDS / TASKS ── */
 .task-card {
-  background: var(--card); border-radius: 18px; padding: 16px 16px;
+  background: var(--card); border-radius: 22px; padding: 16px 16px;
   display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05); transition: opacity .2s;
+  box-shadow: 0 3px 10px rgba(0,0,0,.06); transition: opacity .2s;
 }
+.task-card:nth-child(4n+1) { background: #fdeef5; }
+.task-card:nth-child(4n+2) { background: #eaf4fd; }
+.task-card:nth-child(4n+3) { background: #fdf8e3; }
+.task-card:nth-child(4n+4) { background: #e5f6ec; }
 .task-card.done { opacity: .45; }
 .check-circle {
   width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border);
@@ -114,9 +118,12 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 .card-edit { font-size: 16px; padding: 4px; }
 
 /* ── FILTER TABS ── */
-.filter-tabs { display: flex; background: var(--plum-light); border-radius: 14px; padding: 4px; margin-bottom: 20px; gap: 0; }
-.filter-tab { flex: 1; padding: 9px 4px; border-radius: 11px; font-size: 13px; font-weight: 600; color: var(--plum); transition: all .2s; text-align: center; }
-.filter-tab.active { background: var(--card); color: var(--text); font-weight: 700; box-shadow: 0 1px 6px rgba(0,0,0,.08); }
+.filter-tabs { display: flex; background: transparent; border-radius: 14px; padding: 0; margin-bottom: 20px; gap: 8px; }
+.filter-tab { flex: 1; padding: 10px 4px; border-radius: 20px; font-size: 13px; font-weight: 700; color: #6b5d61; transition: all .2s; text-align: center; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+.filter-tabs .filter-tab:nth-child(1).active { background: #FFF3C4; color: #7c5c0e; }
+.filter-tabs .filter-tab:nth-child(2).active { background: #FFD9DF; color: #a33a52; }
+.filter-tabs .filter-tab:nth-child(3).active { background: #ded1f7; color: #5b3d8c; }
+
 
 /* ── SHOPPING ── */
 .shop-stats { display: flex; gap: 10px; margin-bottom: 18px; }
@@ -126,10 +133,14 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 .stat-num { font-size: 22px; font-weight: 800; color: var(--plum); }
 .stat-label { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 1px; }
 .shop-item {
-  background: var(--card); border-radius: 18px; padding: 14px 16px;
+  background: var(--card); border-radius: 22px; padding: 14px 16px;
   display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  box-shadow: 0 3px 10px rgba(0,0,0,.06);
 }
+.shop-item:nth-child(4n+1) { background: #fdeef5; }
+.shop-item:nth-child(4n+2) { background: #eaf4fd; }
+.shop-item:nth-child(4n+3) { background: #fdf8e3; }
+.shop-item:nth-child(4n+4) { background: #e5f6ec; }
 .shop-item.done { opacity: .4; }
 .shop-emoji { font-size: 24px; flex-shrink: 0; }
 .shop-name { flex: 1; font-size: 15px; font-weight: 600; color: var(--text); }
@@ -149,7 +160,11 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 
 /* ── CALENDAR ── */
 .cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.docs-folder-card { background: var(--card); border-radius: 20px; padding: 16px 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 14px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: transform .15s; }
+.docs-folder-card { background: var(--card); border-radius: 24px; padding: 16px 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 14px; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,.06); transition: transform .15s; }
+.docs-folder-card:nth-child(4n+1) { background: #fdeef5; }
+.docs-folder-card:nth-child(4n+2) { background: #fdf8e3; }
+.docs-folder-card:nth-child(4n+3) { background: #eaf4fd; }
+.docs-folder-card:nth-child(4n+4) { background: #e5f6ec; }
 .docs-folder-card:active { transform: scale(.98); }
 .docs-folder-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
 .docs-file-card { background: var(--card); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
@@ -186,19 +201,24 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 .cal-event-popup .pop-edit { background: var(--plum-light); color: var(--plum); border-radius: 10px; padding: 7px 14px; font-size: 13px; font-weight: 700; width: 100%; }
 .range-bar { position: absolute; bottom: 5px; left: 0; right: 0; height: 4px; border-radius: 2px; opacity: .5; }
 .upcoming-event {
-  background: var(--card); border-radius: 18px; padding: 14px 16px;
+  background: var(--card); border-radius: 22px; padding: 14px 16px;
   display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  box-shadow: 0 3px 10px rgba(0,0,0,.06);
 }
+.upcoming-event:nth-child(3n+1) { background: #fdeef5; }
+.upcoming-event:nth-child(3n+2) { background: #fdf8e3; }
+.upcoming-event:nth-child(3n+3) { background: #eaf4fd; }
 .ev-icon-wrap { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
 .ev-title { font-size: 15px; font-weight: 700; color: var(--text); }
 .ev-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
 
 /* ── KIDS PAGE ── */
 .kid-card {
-  background: var(--card); border-radius: 18px; padding: 16px;
-  margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  background: var(--card); border-radius: 24px; padding: 16px;
+  margin-bottom: 12px; box-shadow: 0 3px 10px rgba(0,0,0,.06);
 }
+.kid-card:nth-child(2n+1) { background: #fdd9e5; }
+.kid-card:nth-child(2n+2) { background: #cfe6f7; }
 .kid-card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .kid-tag { font-size: 11px; padding: 4px 10px; border-radius: 20px; background: var(--plum-light); color: var(--plum); font-weight: 700; }
 .kid-title { font-size: 16px; font-weight: 700; color: var(--text); flex: 1; text-align: right; }
@@ -363,7 +383,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 <!-- ══ CALENDAR PAGE ══ -->
 <div class="page" id="page-calendar">
   <div class="page-header">
-    <div class="page-title">לוח שנה <span>📅</span></div>
+    <div class="page-title">לוח שנה <span>🗓️</span></div>
   </div>
   <div class="cal-nav">
     <button class="cal-nav-btn" onclick="calNav(1)">‹</button>
@@ -458,31 +478,31 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   </div>
 
   <!-- Loans Banner -->
-  <div onclick="switchPage('loans')" style="background:linear-gradient(135deg,var(--plum),#5b2d52);border-radius:20px;padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(124,61,110,.3)">
+  <div onclick="switchPage('loans')" style="background:linear-gradient(135deg,#d8b4fe,#c084fc);border-radius:20px;padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(124,61,110,.3)">
     <div style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🏦</div>
     <div style="flex:1">
-      <div style="font-size:15px;font-weight:800;color:#fff">הלוואות ומשכנתא</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px" id="loansBannerSub">מעקב יתרות ותשלומים</div>
+      <div style="font-size:15px;font-weight:800;color:#4a2c5e">הלוואות ומשכנתא</div>
+      <div style="font-size:12px;color:#5d4370;margin-top:2px" id="loansBannerSub">מעקב יתרות ותשלומים</div>
     </div>
     <div style="color:rgba(255,255,255,.6);font-size:20px">‹</div>
   </div>
 
   <!-- Savings Banner -->
-  <div onclick="switchPage('savings')" style="background:linear-gradient(135deg,#4A7C6F,#2d5c52);border-radius:20px;padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(74,124,111,.3)">
+  <div onclick="switchPage('savings')" style="background:linear-gradient(135deg,#a7e3b8,#7bd394);border-radius:20px;padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(74,124,111,.3)">
     <div style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🐷</div>
     <div style="flex:1">
-      <div style="font-size:15px;font-weight:800;color:#fff">חסכונות</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px" id="savingsBannerSub">מעקב חסכונות ויעדים</div>
+      <div style="font-size:15px;font-weight:800;color:#1e5631">חסכונות</div>
+      <div style="font-size:12px;color:#2d6e42;margin-top:2px" id="savingsBannerSub">מעקב חסכונות ויעדים</div>
     </div>
     <div style="color:rgba(255,255,255,.6);font-size:20px">‹</div>
   </div>
 
   <!-- Recurring Expenses Banner -->
-  <div onclick="switchPage('recurring')" style="background:linear-gradient(135deg,#E8736A,#c4443c);border-radius:20px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(232,115,106,.3)">
+  <div onclick="switchPage('recurring')" style="background:linear-gradient(135deg,#fdba74,#fb923c);border-radius:20px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(232,115,106,.3)">
     <div style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🔄</div>
     <div style="flex:1">
-      <div style="font-size:15px;font-weight:800;color:#fff">הוצאות קבועות</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px" id="recurringBannerSub">מנויים, חוגים, תשלומים קבועים</div>
+      <div style="font-size:15px;font-weight:800;color:#7c3d0e">הוצאות קבועות</div>
+      <div style="font-size:12px;color:#8a5324;margin-top:2px" id="recurringBannerSub">מנויים, חוגים, תשלומים קבועים</div>
     </div>
     <div style="color:rgba(255,255,255,.6);font-size:20px">‹</div>
   </div>
@@ -1096,8 +1116,8 @@ let editingTaskId=null,editingEventId=null,editingKidId=null;
 const HEB_MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 const HEB_DAYS=['א','ב','ג','ד','ה','ו','ש'];
 const HEB_DOW=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
-const EMOJIS=['🗓️','🍷','🎂','🏕️','👨‍👩‍👧','🎬','🏋️','✈️','🎁','💊','🐾','🌿','🎵','☕','🍕'];
-const EVENT_COLORS=['#7C3D6E','#E8736A','#4A7C6F','#5B8ACE','#E8A030','#9B59B6'];
+const EMOJIS=['🗓️','🎉','🎂','🍷','👨‍👩‍👧','💑','🎬','🏋️','⚽','✈️','🏖️','🎁','💊','🩺','👶','🎓','💼','🛠️','🐾','🌿','🎵','☕','🍕','🛍️'];
+const EVENT_COLORS=['#f472b6','#fb923c','#4ade80','#60a5fa','#facc15','#c084fc'];
 const PRIORITY_ORDER={'גבוה':0,'בינוני':1,'נמוך':2};
 const PRIORITY_COLOR={'גבוה':'#E8736A','בינוני':'#E8A030','נמוך':'#4A7C6F'};
 
@@ -2654,7 +2674,7 @@ window.confirmImport=async()=>{
 };
 const HEB_MONTHS_FULL=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 const HEB_MONTHS_SHORT=['ינו','פבר','מרץ','אפר','מאי','יוני','יול','אוג','ספט','אוק','נוב','דצמ'];
-const CAT_COLORS=['#7C3D6E','#E8736A','#4A7C6F','#5B8ACE','#E8A030','#9B59B6','#1ABC9C','#E74C3C','#3498DB','#F39C12','#2ECC71','#E91E63','#FF5722','#607D8B','#795548','#9E9E9E'];
+const CAT_COLORS=['#f472b6','#fb923c','#4ade80','#60a5fa','#facc15','#c084fc','#5eead4','#fda4af','#93c5fd','#fcd34d','#86efac','#f9a8d4','#fdba74','#a5b4fc','#d6bcfa','#cbd5e1'];
 let expenses=[],budgetSettings={};
 let budgetYear=new Date().getFullYear(),budgetMonth=new Date().getMonth();
 let editingExpenseId=null,expSortBy='date',expCatFilter='all',expSearch='';
@@ -3262,7 +3282,7 @@ window.deleteFolder=async(folderId)=>{
 
 // New folder sheet
 const FOLDER_EMOJIS=['📋','🪪','✈️','🚗','🏦','💊','🏠','📜','🎓','👶','💼','🔑'];
-const FOLDER_COLORS=['#7C3D6E','#4A7C6F','#E8736A','#3B82F6','#F59E0B','#10B981'];
+const FOLDER_COLORS=['#f472b6','#4ade80','#fb923c','#60a5fa','#facc15','#c084fc'];
 let newFolderEmoji='📋',newFolderColor='#7C3D6E';
 
 window.openNewFolderSheet=()=>{
