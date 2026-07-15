@@ -55,30 +55,37 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 .home-hello { font-size: 32px; font-weight: 800; color: var(--text); }
 .home-date { font-size: 14px; color: var(--muted); margin-top: 2px; }
 .home-logout { width: 36px; height: 36px; border-radius: 50%; background: var(--card); display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
-.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
 .summary-card {
-  background: var(--card); border-radius: 20px; padding: 18px 16px;
-  box-shadow: 0 2px 12px rgba(0,0,0,.06); position: relative; overflow: hidden;
+  border-radius: 26px; padding: 20px 18px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.07); position: relative; overflow: hidden;
   cursor: pointer; transition: transform .15s;
 }
+.summary-card:nth-child(1) { background: #FFD9DF; }
+.summary-card:nth-child(2) { background: #C9E4FF; }
+.summary-card:nth-child(3) { background: #FFF3C4; }
+.summary-card:nth-child(4) { background: #C8F0DC; }
 .summary-card:active { transform: scale(.97); }
-.summary-icon { font-size: 28px; position: absolute; top: 14px; left: 14px; opacity: .15; }
-.summary-num { font-size: 36px; font-weight: 800; color: var(--text); margin-top: 8px; }
-.summary-label { font-size: 13px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+.summary-icon { font-size: 34px; position: static; opacity: 1; margin-bottom: 4px; }
+.summary-num { font-size: 34px; font-weight: 800; color: #3d3436; margin-top: 2px; }
+.summary-label { font-size: 13px; color: #6b5d61; font-weight: 700; margin-top: 2px; }
 .wa-banner {
-  background: #e8f7ef; border-radius: 20px; padding: 16px 18px;
+  background: linear-gradient(120deg, #ffe3ea, #fff7d9, #d9f3e5); border-radius: 24px; padding: 16px 18px;
   display: flex; align-items: center; gap: 14px; margin-bottom: 24px;
-  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  box-shadow: 0 4px 14px rgba(0,0,0,.07);
 }
 .wa-icon { width: 48px; height: 48px; background: #25D366; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
 .wa-text { font-size: 14px; font-weight: 700; color: var(--text); }
 .wa-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .home-section-title { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
 .home-event-card {
-  background: var(--card); border-radius: 16px; padding: 14px 16px;
+  background: var(--card); border-radius: 20px; padding: 14px 16px;
   display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  box-shadow: 0 3px 10px rgba(0,0,0,.06);
 }
+.home-event-card:nth-child(3n+1) { background: #fdeef5; }
+.home-event-card:nth-child(3n+2) { background: #fdf8e3; }
+.home-event-card:nth-child(3n+3) { background: #e5f6ec; }
 .home-event-icon { font-size: 28px; }
 .home-event-title { font-size: 15px; font-weight: 700; color: var(--text); }
 .home-event-date { font-size: 12px; color: var(--muted); margin-top: 2px; }
@@ -201,10 +208,10 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 
 /* ── FAB ── */
 .fab {
-  position: fixed; left: 20px; bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
-  width: 56px; height: 56px; border-radius: 50%; background: var(--plum);
-  color: #fff; font-size: 28px; box-shadow: 0 4px 16px rgba(124,61,110,.4);
-  display: flex; align-items: center; justify-content: center; z-index: 90; transition: transform .15s;
+  position: fixed; bottom: calc(88px + var(--safe-bottom)); right: 20px; width: 56px; height: 56px;
+  background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #93c5fd); border-radius: 50%; color: #fff; font-size: 28px; font-weight: 300;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 20px rgba(196,181,253,.5); z-index: 90; transition: transform .15s;
 }
 .fab:active { transform: scale(.93); }
 .fab.sage { background: var(--sage); box-shadow: 0 4px 16px rgba(74,124,111,.35); }
@@ -293,25 +300,25 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
     </div>
   </div>
   <div class="summary-grid">
+    <div class="summary-card" onclick="switchPage('tasks')">
+      <div class="summary-icon">📋</div>
+      <div class="summary-num" id="sumTasks">0</div>
+      <div class="summary-label">משימות ממתינות</div>
+    </div>
     <div class="summary-card" onclick="switchPage('shopping')">
       <div class="summary-icon">🛒</div>
       <div class="summary-num" id="sumShopping">0</div>
       <div class="summary-label">פריטים לקנייה</div>
     </div>
-    <div class="summary-card" onclick="switchPage('tasks')">
-      <div class="summary-icon">✅</div>
-      <div class="summary-num" id="sumTasks">0</div>
-      <div class="summary-label">משימות ממתינות</div>
+    <div class="summary-card" onclick="switchPage('calendar')">
+      <div class="summary-icon">🎉</div>
+      <div class="summary-num" id="sumEvents">0</div>
+      <div class="summary-label">אירועים קרבים</div>
     </div>
     <div class="summary-card" onclick="switchPage('kids')">
       <div class="summary-icon">👶</div>
       <div class="summary-num" id="sumKids">0</div>
       <div class="summary-label">תורים קרובים</div>
-    </div>
-    <div class="summary-card" onclick="switchPage('calendar')">
-      <div class="summary-icon">📅</div>
-      <div class="summary-num" id="sumEvents">0</div>
-      <div class="summary-label">אירועים קרובים</div>
     </div>
   </div>
   <div class="wa-banner">
