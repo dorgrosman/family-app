@@ -3404,21 +3404,37 @@ window.shareSelectedFiles=async()=>{
 };
 
 window.shareFile=async(url,name)=>{
+  let file=null;
   try{
     toast('⏳ מכין לשיתוף...');
     const resp=await fetch(url);
+    if(!resp.ok)throw new Error('הורדה נכשלה ('+resp.status+')');
     const blob=await resp.blob();
-    const file=new File([blob],name,{type:blob.type});
+    const sizeMB=(blob.size/1024/1024).toFixed(1);
+    file=new File([blob],name,{type:blob.type||'application/octet-stream'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
       await navigator.share({files:[file],title:name});
-    } else if(navigator.share){
+      return;
+    }
+    // File share not supported (possibly too large: sizeMB MB) - fall back to URL share
+    if(navigator.share){
       await navigator.share({title:name,url});
-    } else {
+      toast('ℹ️ שותף כקישור (קובץ '+sizeMB+'MB)');
+      return;
+    }
+    await navigator.clipboard.writeText(url);
+    toast('🔗 הקישור הועתק!');
+  }catch(e){
+    if(e.name==='AbortError')return;
+    console.error('share error',e);
+    // Last resort - try URL share or clipboard
+    try{
+      if(navigator.share){await navigator.share({title:name,url});toast('ℹ️ שותף כקישור');return;}
       await navigator.clipboard.writeText(url);
       toast('🔗 הקישור הועתק!');
+    }catch(e2){
+      if(e2.name!=='AbortError')toast('❌ '+(e.message||'שגיאה בשיתוף'));
     }
-  }catch(e){
-    if(e.name!=='AbortError')toast('❌ שגיאה בשיתוף');
   }
 };
 
