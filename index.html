@@ -981,6 +981,10 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
     <div><div class="field-label">מתאריך</div><input class="input-field" type="date" id="evDateFrom"></div>
     <div><div class="field-label">עד תאריך</div><input class="input-field" type="date" id="evDateTo"></div>
   </div>
+  <label style="display:flex;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer">
+    <input type="checkbox" id="evRecurring" style="width:20px;height:20px">
+    <span style="font-size:14px;font-weight:600;color:var(--text)">🔁 חוזר כל שבוע באותו יום</span>
+  </label>
   <div class="field-label">אמוג'י</div>
   <div class="emoji-picker" id="emojiPicker"></div>
   <div class="field-label">צבע</div>
@@ -1187,6 +1191,7 @@ window.openSheet=()=>{
     document.getElementById('evTitle').value='';document.getElementById('evTime').value='';
     document.getElementById('evDateFrom').value=new Date().toISOString().slice(0,10);
     document.getElementById('evDateTo').value='';
+    document.getElementById('evRecurring').checked=false;
     document.getElementById('calSubmitBtn').textContent='הוסף אירוע';
     document.getElementById('calDeleteBtn').style.display='none';
     selectedEmoji='🗓️';selectedColor='#7C3D6E';renderEmojiPicker();renderColorPicker();
@@ -1422,6 +1427,24 @@ window.saveShopItem=async()=>{
 };
 
 // CALENDAR
+function getEventWeekday(e){
+  const d=e.dateFrom||e.date;
+  if(!d)return null;
+  return new Date(d+'T00:00:00').getDay();
+}
+function nextRecurringDate(e,todayStr){
+  const wd=getEventWeekday(e);
+  if(wd===null)return null;
+  const today=new Date(todayStr+'T00:00:00');
+  const todayWd=today.getDay();
+  let diff=(wd-todayWd+7)%7;
+  const next=new Date(today);
+  next.setDate(today.getDate()+diff);
+  return next.toISOString().slice(0,10);
+}
+const KID_TYPE_EMOJI={'רופא':'🩺','רופא שיניים':'🦷','קלינאית תקשורת':'🗣️','ריפוי בעיסוק':'🖐️','פיזיותרפיה':'🏃','מפגש שבועי':'👥','אחר':'👶'};
+const KID_TYPE_COLOR={'רופא':'#5B8ACE','רופא שיניים':'#5eead4','קלינאית תקשורת':'#c084fc','ריפוי בעיסוק':'#fb923c','פיזיותרפיה':'#4ade80','מפגש שבועי':'#facc15','אחר':'#f472b6'};
+
 function renderCalendar(){
   document.getElementById('calMonthLabel').textContent=HEB_MONTHS[calMonth]+' '+calYear;
   const firstDay=new Date(calYear,calMonth,1).getDay(),totalDays=new Date(calYear,calMonth+1,0).getDate(),td=new Date();
@@ -1429,68 +1452,78 @@ function renderCalendar(){
   for(let i=0;i<firstDay;i++)html+='<div></div>';
   for(let d=1;d<=totalDays;d++){
     const ds=calYear+'-'+pad(calMonth+1)+'-'+pad(d);
-    const dayEvs=events.filter(e=>{const f=e.dateFrom||e.date||'',t=e.dateTo||f;return ds>=f&&ds<=t;});
+    const cellWd=new Date(ds+'T00:00:00').getDay();
+    const dayEvs=events.filter(e=>{
+      if(e.recurring){
+        const anchor=e.dateFrom||e.date||'';
+        return anchor&&ds>=anchor&&getEventWeekday(e)===cellWd;
+      }
+      const f=e.dateFrom||e.date||'',t=e.dateTo||f;
+      return ds>=f&&ds<=t;
+    });
+    const dayKids=kids.filter(k=>k.date===ds&&!k.done);
+    const totalMarks=dayEvs.length+dayKids.length;
     const isToday=d===td.getDate()&&calMonth===td.getMonth()&&calYear===td.getFullYear();
-    const dots=dayEvs.slice(0,3).map(e=>'<div class="cal-dot" style="background:'+(isToday?'rgba(255,255,255,.8)':e.color)+'"></div>').join('');
-    const hasEv=dayEvs.length>0;
+    const dotColors=[...dayEvs.map(e=>e.color),...dayKids.map(k=>KID_TYPE_COLOR[k.type]||'#5B8ACE')];
+    const dots=dotColors.slice(0,3).map(c=>'<div class="cal-dot" style="background:'+(isToday?'rgba(255,255,255,.8)':c)+'"></div>').join('');
     html+='<div class="cal-cell '+(isToday?'today':'')+'" onclick="calDayTap('+d+',event)"><span class="cal-num">'+d+'</span><div class="cal-dots">'+dots+'</div></div>';
   }
   document.getElementById('calGrid').innerHTML=html;
-  const now=new Date();
-  const todayStr=now.toISOString().slice(0,10);
-  const nowTime=now.getHours()*60+now.getMinutes();
-  const upcoming=events.filter(e=>{
-    const endDate=e.dateTo||e.dateFrom||e.date||'';
-    if(!endDate)return false;
-    if(endDate>todayStr)return true; // future date entirely
-    if(endDate<todayStr)return false; // past date entirely
-    // endDate === todayStr: check time if present
-    if(!e.time)return true; // no time specified, keep for today
-    const [h,m]=e.time.split(':').map(Number);
-    return (h*60+m)>=nowTime;
-  }).sort((a,b)=>(a.dateFrom||a.date||'').localeCompare(b.dateFrom||b.date||'')).slice(0,8);
-  const upEl=document.getElementById('upcomingList');
-  const homeEl=document.getElementById('homeEvents');
-  document.getElementById('sumEvents').textContent=upcoming.length;
-  const evHTML=e=>`<div class="upcoming-event">
-    <div class="ev-icon-wrap" style="background:${e.color}22">${e.emoji}</div>
-    <div style="flex:1">
-      <div class="ev-title">${e.title}</div>
-      <div class="ev-meta">${(e.dateFrom||e.date||'').slice(8,10)}/${(e.dateFrom||e.date||'').slice(5,7)}${e.time?' • '+e.time:''}${e.owner?' • 👤'+e.owner:''}</div>
-    </div>
-    <button class="card-edit" onclick="editEvent('${e.id}')">✏️</button>
-    <button class="card-del" onclick="deleteEvent('${e.id}')">🗑️</button>
-  </div>`;
-  upEl.innerHTML=upcoming.length?upcoming.map(evHTML).join(''):'<div class="empty-state" style="padding:20px 0">אין אירועים קרובים 📭</div>';
-  if(homeEl)homeEl.innerHTML=upcoming.slice(0,3).map(e=>`<div class="home-event-card"><span class="home-event-icon">${e.emoji}</span><div><div class="home-event-title">${e.title}</div><div class="home-event-date">${(e.dateFrom||e.date||'').slice(8,10)}/${(e.dateFrom||e.date||'').slice(5,7)}${e.time?' • '+e.time:''}</div></div></div>`).join('');
+  renderUpcoming();
 }
 function renderUpcoming(){
   const now=new Date();
   const todayStr=now.toISOString().slice(0,10);
   const nowTime=now.getHours()*60+now.getMinutes();
-  const upcoming=events.filter(e=>{
+
+  // Normal (non-recurring) events, only future/today ones
+  const plainEvents=events.filter(e=>!e.recurring).map(e=>{
     const endDate=e.dateTo||e.dateFrom||e.date||'';
-    if(!endDate)return false;
-    if(endDate>todayStr)return true;
-    if(endDate<todayStr)return false;
+    return {...e,_effDate:e.dateFrom||e.date||'',_endDate:endDate,_src:'event'};
+  }).filter(e=>{
+    if(!e._endDate)return false;
+    if(e._endDate>todayStr)return true;
+    if(e._endDate<todayStr)return false;
     if(!e.time)return true;
     const [h,m]=e.time.split(':').map(Number);
     return (h*60+m)>=nowTime;
-  }).sort((a,b)=>(a.dateFrom||a.date||'').localeCompare(b.dateFrom||b.date||'')).slice(0,8);
+  });
+
+  // Recurring weekly events - show only the single next occurrence
+  const recurringEvents=events.filter(e=>e.recurring).map(e=>{
+    let effDate=nextRecurringDate(e,todayStr);
+    if(effDate===todayStr&&e.time){
+      const [h,m]=e.time.split(':').map(Number);
+      if((h*60+m)<nowTime)effDate=nextRecurringDate(e,new Date(now.getTime()+86400000).toISOString().slice(0,10));
+    }
+    return {...e,_effDate:effDate,_src:'event'};
+  }).filter(e=>e._effDate);
+
+  // Kids appointments (not done, today or future)
+  const kidEvents=kids.filter(k=>!k.done&&k.date&&k.date>=todayStr).map(k=>({
+    id:k.id,title:k.title,time:k.time,owner:k.child,
+    emoji:KID_TYPE_EMOJI[k.type]||'👶',color:KID_TYPE_COLOR[k.type]||'#5B8ACE',
+    _effDate:k.date,_src:'kid'
+  }));
+
+  const upcoming=[...plainEvents,...recurringEvents,...kidEvents]
+    .sort((a,b)=>(a._effDate+(a.time||'99:99')).localeCompare(b._effDate+(b.time||'99:99')))
+    .slice(0,8);
+
   const upEl=document.getElementById('upcomingList');
   const homeEl=document.getElementById('homeEvents');
   if(document.getElementById('sumEvents'))document.getElementById('sumEvents').textContent=upcoming.length;
   const evHTML=e=>`<div class="upcoming-event">
     <div class="ev-icon-wrap" style="background:${e.color}22">${e.emoji}</div>
     <div style="flex:1">
-      <div class="ev-title">${e.title}</div>
-      <div class="ev-meta">${(e.dateFrom||e.date||'').slice(8,10)}/${(e.dateFrom||e.date||'').slice(5,7)}${e.time?' • '+e.time:''}${e.owner?' • 👤'+e.owner:''}</div>
+      <div class="ev-title">${e.title}${e.recurring?' 🔁':''}</div>
+      <div class="ev-meta">${e._effDate.slice(8,10)}/${e._effDate.slice(5,7)}${e.time?' • '+e.time:''}${e.owner?' • 👤'+e.owner:''}</div>
     </div>
-    <button class="card-edit" onclick="editEvent('${e.id}')">✏️</button>
-    <button class="card-del" onclick="deleteEvent('${e.id}')">🗑️</button>
+    <button class="card-edit" onclick="${e._src==='kid'?'editKid':'editEvent'}('${e.id}')">✏️</button>
+    <button class="card-del" onclick="${e._src==='kid'?'deleteKid':'deleteEvent'}('${e.id}')">🗑️</button>
   </div>`;
   if(upEl)upEl.innerHTML=upcoming.length?upcoming.map(evHTML).join(''):'<div class="empty-state" style="padding:20px 0">אין אירועים קרובים 📭</div>';
-  if(homeEl)homeEl.innerHTML=upcoming.slice(0,3).map(e=>`<div class="home-event-card"><span class="home-event-icon">${e.emoji}</span><div><div class="home-event-title">${e.title}</div><div class="home-event-date">${(e.dateFrom||e.date||'').slice(8,10)}/${(e.dateFrom||e.date||'').slice(5,7)}${e.time?' • '+e.time:''}</div></div></div>`).join('');
+  if(homeEl)homeEl.innerHTML=upcoming.slice(0,3).map(e=>`<div class="home-event-card"><span class="home-event-icon">${e.emoji}</span><div><div class="home-event-title">${e.title}</div><div class="home-event-date">${e._effDate.slice(8,10)}/${e._effDate.slice(5,7)}${e.time?' • '+e.time:''}</div></div></div>`).join('');
 }
 
 window.selectBudgetMonth=(month)=>{
@@ -1506,28 +1539,40 @@ window.selectBudgetMonth=(month)=>{
 window.calNav=dir=>{calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCalendar();};
 window.calDayTap=(d,ev)=>{
   const ds=calYear+'-'+pad(calMonth+1)+'-'+pad(d);
-  const dayEvs=events.filter(e=>{const f=e.dateFrom||e.date||'',t=e.dateTo||f;return ds>=f&&ds<=t;});
+  const cellWd=new Date(ds+'T00:00:00').getDay();
+  const dayEvs=events.filter(e=>{
+    if(e.recurring){
+      const anchor=e.dateFrom||e.date||'';
+      return anchor&&ds>=anchor&&getEventWeekday(e)===cellWd;
+    }
+    const f=e.dateFrom||e.date||'',t=e.dateTo||f;
+    return ds>=f&&ds<=t;
+  });
+  const dayKids=kids.filter(k=>k.date===ds&&!k.done).map(k=>({
+    id:k.id,title:k.title,time:k.time,emoji:KID_TYPE_EMOJI[k.type]||'👶',dateFrom:k.date,_isKid:true
+  }));
+  const allDayItems=[...dayEvs,...dayKids];
 
   // Remove any existing popup
   const old=document.getElementById('calPopup');if(old)old.remove();
 
-  if(dayEvs.length>0){
+  if(allDayItems.length>0){
     // Show popup with event info
-    const e=dayEvs[0];
+    const e=allDayItems[0];
     const popup=document.createElement('div');
     popup.id='calPopup';
     popup.className='cal-event-popup';
-    const dateStr=(e.dateFrom||e.date||'').slice(8,10)+'/'+(e.dateFrom||e.date||'').slice(5,7);
+    const dateStr=(e.dateFrom||e.date||ds).slice(8,10)+'/'+(e.dateFrom||e.date||ds).slice(5,7);
     popup.innerHTML=`
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         <span style="font-size:20px">${e.emoji||'🗓️'}</span>
         <div>
-          <div class="pop-title">${e.title}</div>
-          <div class="pop-meta">${e.time?e.time+' - ':''}${dateStr}${dayEvs.length>1?' (+'+( dayEvs.length-1)+'אחרים)':''}</div>
+          <div class="pop-title">${e.title}${e.recurring?' 🔁':''}</div>
+          <div class="pop-meta">${e.time?e.time+' - ':''}${dateStr}${allDayItems.length>1?' (+'+( allDayItems.length-1)+'אחרים)':''}</div>
         </div>
       </div>
-      ${dayEvs.length>1?dayEvs.slice(1).map(x=>`<div style="font-size:12px;color:var(--muted);padding:2px 0">${x.emoji||'🗓️'} ${x.title}</div>`).join(''):''}
-      <button class="pop-edit" onclick="document.getElementById('calPopup').remove();editEvent('${e.id}')">✏️ עריכה</button>
+      ${allDayItems.length>1?allDayItems.slice(1).map(x=>`<div style="font-size:12px;color:var(--muted);padding:2px 0">${x.emoji||'🗓️'} ${x.title}</div>`).join(''):''}
+      <button class="pop-edit" onclick="document.getElementById('calPopup').remove();${e._isKid?'editKid':'editEvent'}('${e.id}')">✏️ עריכה</button>
     `;
     // Position near tap
     const rect=ev.target.closest('.cal-cell').getBoundingClientRect();
@@ -1546,6 +1591,7 @@ window.calDayTap=(d,ev)=>{
     document.getElementById('calSheetTitle').textContent='אירוע ביום '+d+'/'+(calMonth+1);
     document.getElementById('evTitle').value='';document.getElementById('evTime').value='';
     document.getElementById('evDateFrom').value=ds;document.getElementById('evDateTo').value='';
+    document.getElementById('evRecurring').checked=false;
     document.getElementById('calSubmitBtn').textContent='הוסף אירוע';
     document.getElementById('calDeleteBtn').style.display='none';
     selectedEmoji='🗓️';selectedColor='#7C3D6E';renderEmojiPicker();renderColorPicker();
@@ -1558,6 +1604,7 @@ window.editEvent=id=>{
   document.getElementById('calSheetTitle').textContent='עריכת אירוע';
   document.getElementById('evTitle').value=e.title;document.getElementById('evTime').value=e.time||'';
   document.getElementById('evDateFrom').value=e.dateFrom||e.date||'';document.getElementById('evDateTo').value=e.dateTo||'';
+  document.getElementById('evRecurring').checked=!!e.recurring;
   document.getElementById('evOwner').value=e.owner||myName;
   document.getElementById('calSubmitBtn').textContent='שמור שינויים';document.getElementById('calDeleteBtn').style.display='block';
   selectedEmoji=e.emoji||'🗓️';selectedColor=e.color||'#7C3D6E';renderEmojiPicker();renderColorPicker();
@@ -1573,7 +1620,8 @@ window.pickColor=c=>{selectedColor=c;renderColorPicker();};
 window.saveEvent=async()=>{
   const title=document.getElementById('evTitle').value.trim();if(!title)return;
   const dateFrom=document.getElementById('evDateFrom').value,dateTo=document.getElementById('evDateTo').value||dateFrom;
-  const data={title,dateFrom,dateTo,date:dateFrom,time:document.getElementById('evTime').value,owner:document.getElementById('evOwner').value,emoji:selectedEmoji,color:selectedColor};
+  const recurring=document.getElementById('evRecurring').checked;
+  const data={title,dateFrom,dateTo,date:dateFrom,time:document.getElementById('evTime').value,owner:document.getElementById('evOwner').value,emoji:selectedEmoji,color:selectedColor,recurring};
   if(editingEventId){await updateDoc(doc(db,'events',editingEventId),data);closeSheet();toast('📅 עודכן!');}
   else{await addDoc(collection(db,'events'),{...data,createdAt:Date.now()});closeSheet();toast('📅 נוסף!');}
   sendPushToOthers('📅 אירוע '+(editingEventId?'עודכן':'חדש')+'!',data.emoji+' '+title+(data.time?' בשעה '+data.time:''));
