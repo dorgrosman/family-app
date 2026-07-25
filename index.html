@@ -28,6 +28,23 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --nav-h: 72px;
 }
+html[data-theme="dark"] {
+  --bg: #1c1620;
+  --card: #2a2230;
+  --plum: #c98fb8;
+  --plum-light: #3a2d40;
+  --plum-mid: #9d6a8c;
+  --sage: #6fa898;
+  --rose: #e8938a;
+  --text: #f0e8ec;
+  --muted: #8a7b8a;
+  --border: #3d3040;
+}
+html[data-theme="dark"] body { background: var(--bg); }
+html[data-theme="dark"] .cal-day-name { color: #6b5d70; }
+html[data-theme="dark"] .cal-grid { background: var(--card); }
+.theme-toggle-fixed { position: fixed; top: calc(var(--safe-top) + 14px); left: 14px; width: 36px; height: 36px; border-radius: 50%; background: var(--card); box-shadow: 0 2px 10px rgba(0,0,0,.12); display: flex; align-items: center; justify-content: center; font-size: 17px; z-index: 130; transition: opacity .15s; }
+html[data-theme="dark"] .theme-toggle-fixed { box-shadow: 0 2px 10px rgba(0,0,0,.4); }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body {
   font-family: -apple-system, 'Segoe UI', 'Arial Hebrew', Arial, sans-serif;
@@ -115,7 +132,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 
 /* ── FILTER TABS ── */
 .filter-tabs { display: flex; background: transparent; border-radius: 14px; padding: 0; margin-bottom: 20px; gap: 8px; }
-.filter-tab { flex: 1; padding: 10px 4px; border-radius: 20px; font-size: 13px; font-weight: 700; color: #6b5d61; transition: all .2s; text-align: center; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+.filter-tab { flex: 1; padding: 10px 4px; border-radius: 20px; font-size: 13px; font-weight: 700; color: #6b5d61; transition: all .2s; text-align: center; background: var(--card); box-shadow: 0 2px 8px rgba(0,0,0,.05); }
 .filter-tabs .filter-tab:nth-child(1).active { background: #FFF3C4; color: #7c5c0e; }
 .filter-tabs .filter-tab:nth-child(2).active { background: #FFD9DF; color: #a33a52; }
 .filter-tabs .filter-tab:nth-child(3).active { background: #ded1f7; color: #5b3d8c; }
@@ -174,7 +191,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 .status-badge.inprogress { background: #dbeafe; color: #2563eb; }
 .status-badge.waiting { background: #fef9c3; color: #b45309; }
 .status-badge.done { background: #dcfce7; color: #16a34a; }
-.status-popup { position: fixed; background: #fff; border-radius: 16px; padding: 8px; box-shadow: 0 8px 30px rgba(0,0,0,.18); z-index: 9999; display: flex; flex-direction: column; gap: 4px; min-width: 190px; }
+.status-popup { position: fixed; background: var(--card); border-radius: 16px; padding: 8px; box-shadow: 0 8px 30px rgba(0,0,0,.18); z-index: 9999; display: flex; flex-direction: column; gap: 4px; min-width: 190px; }
 .status-popup-item { padding: 9px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; text-align: right; transition: background .12s; }
 .status-popup-item:hover { background: var(--bg); }
 .status-popup-item.current { background: var(--plum-light); color: var(--plum); }
@@ -191,7 +208,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 .cal-dots { display: flex; justify-content: center; gap: 2px; margin-top: 3px; }
 .cal-dot { width: 5px; height: 5px; border-radius: 50%; }
 .cal-cell.today .cal-dot { background: rgba(255,255,255,.8) !important; }
-.cal-event-popup { position: fixed; background: #fff; border-radius: 14px; padding: 12px 14px; box-shadow: 0 8px 30px rgba(0,0,0,.18); z-index: 9999; min-width: 180px; max-width: 240px; text-align: right; direction: rtl; pointer-events: auto; }
+.cal-event-popup { position: fixed; background: var(--card); border-radius: 14px; padding: 12px 14px; box-shadow: 0 8px 30px rgba(0,0,0,.18); z-index: 9999; min-width: 180px; max-width: 240px; text-align: right; direction: rtl; pointer-events: auto; }
 .cal-event-popup .pop-title { font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 3px; }
 .cal-event-popup .pop-meta { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
 .cal-event-popup .pop-edit { background: var(--plum-light); color: var(--plum); border-radius: 10px; padding: 7px 14px; font-size: 13px; font-weight: 700; width: 100%; }
@@ -262,7 +279,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 .sheet-close { font-size: 26px; color: var(--muted); padding: 0; line-height: 1; }
 .field-label { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 6px; margin-top: 16px; text-transform: uppercase; letter-spacing: .3px; }
 .input-field { width: 100%; padding: 14px; border-radius: 14px; border: 1.5px solid var(--border); background: var(--bg); font-size: 16px; color: var(--text); outline: none; transition: border-color .2s; }
-.input-field:focus { border-color: var(--plum); background: #fff; }
+.input-field:focus { border-color: var(--plum); background: var(--card); }
 .select-field { width: 100%; padding: 14px; border-radius: 14px; border: 1.5px solid var(--border); background: var(--bg); font-size: 16px; color: var(--text); outline: none; appearance: none; }
 .form-row { display: flex; gap: 10px; }
 .form-row > * { flex: 1; }
@@ -292,6 +309,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
+<button class="theme-toggle-fixed" id="themeToggleFixed" onclick="toggleTheme()" style="display:none">🌙</button>
 
 <div class="loader-overlay" id="loader">
   <div class="loader-spinner"></div>
@@ -301,14 +319,17 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 <!-- ══ HOME PAGE ══ -->
 <div class="page active" id="page-home">
   <div class="home-top">
-    <button onclick="logoutUser()" style="background:var(--bg);border-radius:12px;padding:7px 12px;font-size:12px;font-weight:600;color:var(--muted)">🚪 יציאה</button>
+    <div style="display:flex;gap:8px">
+      <button onclick="logoutUser()" style="background:var(--bg);border-radius:12px;padding:7px 12px;font-size:12px;font-weight:600;color:var(--muted)">🚪 יציאה</button>
+      <button onclick="toggleTheme()" id="themeToggleHome" style="background:var(--bg);border-radius:12px;padding:7px 12px;font-size:14px;font-weight:600;color:var(--muted)">🌙</button>
+    </div>
     <button class="home-logout" onclick="toggleEditNames()">✏️</button>
     <div class="home-greeting">
       <div class="home-hello">שלום! 👋</div>
       <div class="home-date" id="homeDate"></div>
     </div>
   </div>
-  <div id="nameEditArea" style="display:none;background:#fff;border-radius:16px;padding:14px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+  <div id="nameEditArea" style="display:none;background:var(--card);border-radius:16px;padding:14px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
     <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">שמות</div>
     <div style="display:flex;gap:8px">
       <input class="input-field" id="myNameInput" placeholder="השם שלי" oninput="saveNames()" style="flex:1">
@@ -504,7 +525,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   </div>
 
   <!-- Monthly Bar Chart -->
-  <div style="background:#fff;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+  <div style="background:var(--card);border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <div style="background:var(--plum-light);color:var(--plum);border-radius:10px;padding:4px 10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:4px">
         <span>⌄</span> <span id="budgetChartYear"></span>
@@ -515,7 +536,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   </div>
 
   <!-- Monthly Donut Chart -->
-  <div style="background:#fff;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+  <div style="background:var(--card);border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
     <div style="font-size:15px;font-weight:800;text-align:right;margin-bottom:14px">🍕 לפי קטגוריות (החודש)</div>
     <div style="display:flex;justify-content:center;margin-bottom:16px">
       <canvas id="donutChart" width="180" height="180"></canvas>
@@ -524,7 +545,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   </div>
 
   <!-- Yearly Donut Chart -->
-  <div style="background:#fff;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+  <div style="background:var(--card);border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
     <div style="font-size:15px;font-weight:800;text-align:right;margin-bottom:14px">🍕 לפי קטגוריות (שנתי <span id="yearlyDonutYear"></span>)</div>
     <div style="display:flex;justify-content:center;margin-bottom:16px">
       <canvas id="yearlyDonutChart" width="180" height="180"></canvas>
@@ -533,7 +554,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   </div>
 
   <!-- Budget Progress -->
-  <div id="budgetProgressWrap" style="background:#fff;border-radius:20px;padding:16px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+  <div id="budgetProgressWrap" style="background:var(--card);border-radius:20px;padding:16px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
       <button onclick="openBudgetEdit()" style="font-size:12px;color:var(--plum);font-weight:600;display:flex;align-items:center;gap:4px">✏️ ערור</button>
       <div style="font-size:15px;font-weight:800">🎯 תקציב חודשי</div>
@@ -554,7 +575,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   <div id="budgetInsights" style="margin-bottom:16px"></div>
 
   <!-- Expense List -->
-  <div style="background:#fff;border-radius:20px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+  <div style="background:var(--card);border-radius:20px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
     <div style="font-size:15px;font-weight:800;text-align:right;margin-bottom:12px">📋 רשימת הוצאות</div>
 
     <!-- Search -->
@@ -585,7 +606,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
 
   <!-- Budget Edit Modal -->
   <div id="budgetEditModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-end">
-    <div style="background:#fff;border-radius:24px 24px 0 0;padding:24px 20px 40px;width:100%">
+    <div style="background:var(--card);border-radius:24px 24px 0 0;padding:24px 20px 40px;width:100%">
       <div style="font-size:16px;font-weight:800;margin-bottom:16px;text-align:right">הגדרת תקציב חודשי</div>
       <div style="display:flex;gap:10px">
         <input class="input-field" type="number" id="globalBudgetInput" placeholder="הזן סכום בש״ח..." style="flex:1">
@@ -1165,6 +1186,8 @@ window.switchPage=(name,btn)=>{
   const fab=document.getElementById('fab');
   fab.style.display=(name==='home'||name==='docs')?'none':'flex';
   fab.className='fab'+(name==='shopping'?' sage':'');
+  const themeFixed=document.getElementById('themeToggleFixed');
+  if(themeFixed)themeFixed.style.display=name==='home'?'none':'flex';
 };
 
 // SHEET
@@ -2914,7 +2937,7 @@ function renderInsights(monthExps,total,globalBudget,dailyAvg){
   if(dailyAvg>0)insights.push({icon:'📊',text:'ממוצע הוצאה יומי: '+fmt(dailyAvg)});
   if(!insights.length){el.innerHTML='';return;}
   el.innerHTML='<div style="font-size:15px;font-weight:800;text-align:right;margin-bottom:10px">💡 תובנות</div>'+
-    insights.map(i=>`<div style="background:#fff;border-radius:16px;padding:14px 16px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);display:flex;align-items:center;gap:12px;direction:rtl">
+    insights.map(i=>`<div style="background:var(--card);border-radius:16px;padding:14px 16px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);display:flex;align-items:center;gap:12px;direction:rtl">
       <span style="font-size:22px">${i.icon}</span>
       <span style="font-size:13px;font-weight:600;color:var(--text);flex:1">${i.text}</span>
     </div>`).join('');
@@ -3126,6 +3149,31 @@ function initListeners(){
 }
 
 // INIT
+// ══ THEME (DARK MODE) ══
+window.toggleTheme=()=>{
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  const next=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  try{localStorage.setItem('theme',next);}catch(e){}
+  updateThemeIcons(next);
+};
+function updateThemeIcons(theme){
+  const icon=theme==='dark'?'☀️':'🌙';
+  const fixedBtn=document.getElementById('themeToggleFixed');
+  const homeBtn=document.getElementById('themeToggleHome');
+  if(fixedBtn)fixedBtn.textContent=icon;
+  if(homeBtn)homeBtn.textContent=icon;
+}
+function applySavedTheme(){
+  let saved=null;
+  try{saved=localStorage.getItem('theme');}catch(e){}
+  if(saved==='dark'){
+    document.documentElement.setAttribute('data-theme','dark');
+    updateThemeIcons('dark');
+  }
+}
+applySavedTheme();
+
 async function init(){
   // Service worker removed to fix Android install issue
   updateHomeDate();
