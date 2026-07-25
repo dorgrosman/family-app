@@ -43,6 +43,39 @@ html[data-theme="dark"] {
 html[data-theme="dark"] body { background: var(--bg); }
 html[data-theme="dark"] .cal-day-name { color: #6b5d70; }
 html[data-theme="dark"] .cal-grid { background: var(--card); }
+
+/* Dark-mode pastel card overrides */
+html[data-theme="dark"] .summary-card:nth-child(1) { background: #4a2e38; }
+html[data-theme="dark"] .summary-card:nth-child(2) { background: #253a4a; }
+html[data-theme="dark"] .summary-card:nth-child(3) { background: #4a4326; }
+html[data-theme="dark"] .summary-card:nth-child(4) { background: #234a35; }
+html[data-theme="dark"] .summary-num { color: var(--text); }
+html[data-theme="dark"] .summary-label { color: var(--muted); }
+
+html[data-theme="dark"] .home-event-card:nth-child(3n+1) { background: #3a2733; }
+html[data-theme="dark"] .home-event-card:nth-child(3n+2) { background: #3a3524; }
+html[data-theme="dark"] .home-event-card:nth-child(3n+3) { background: #223a2c; }
+
+html[data-theme="dark"] .shop-item:nth-child(4n+1) { background: #3a2733; }
+html[data-theme="dark"] .shop-item:nth-child(4n+2) { background: #22303a; }
+html[data-theme="dark"] .shop-item:nth-child(4n+3) { background: #3a3524; }
+html[data-theme="dark"] .shop-item:nth-child(4n+4) { background: #223a2c; }
+
+html[data-theme="dark"] .docs-folder-card:nth-child(4n+1) { background: #3a2733; }
+html[data-theme="dark"] .docs-folder-card:nth-child(4n+2) { background: #3a3524; }
+html[data-theme="dark"] .docs-folder-card:nth-child(4n+3) { background: #22303a; }
+html[data-theme="dark"] .docs-folder-card:nth-child(4n+4) { background: #223a2c; }
+
+html[data-theme="dark"] .kid-card:nth-child(2n+1) { background: #3a2433; }
+html[data-theme="dark"] .kid-card:nth-child(2n+2) { background: #203040; }
+
+/* Dark-mode budget banners (loans/savings/recurring) */
+html[data-theme="dark"] .budget-banner-loans { background: linear-gradient(135deg,#4a3560,#5c3d70) !important; }
+html[data-theme="dark"] .budget-banner-savings { background: linear-gradient(135deg,#2d4a3a,#356048) !important; }
+html[data-theme="dark"] .budget-banner-recurring { background: linear-gradient(135deg,#5c4326,#704f28) !important; }
+html[data-theme="dark"] .banner-title-loans, html[data-theme="dark"] .banner-sub-loans { color: #f0e0f5 !important; }
+html[data-theme="dark"] .banner-title-savings, html[data-theme="dark"] .banner-sub-savings { color: #e0f5e8 !important; }
+html[data-theme="dark"] .banner-title-recurring, html[data-theme="dark"] .banner-sub-recurring { color: #f5ead8 !important; }
 .theme-toggle-fixed { position: fixed; top: calc(var(--safe-top) + 14px); left: 14px; width: 36px; height: 36px; border-radius: 50%; background: var(--card); box-shadow: 0 2px 10px rgba(0,0,0,.12); display: flex; align-items: center; justify-content: center; font-size: 17px; z-index: 130; transition: opacity .15s; }
 html[data-theme="dark"] .theme-toggle-fixed { box-shadow: 0 2px 10px rgba(0,0,0,.4); }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -495,31 +528,31 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   </div>
 
   <!-- Loans Banner -->
-  <div onclick="switchPage('loans')" style="background:linear-gradient(135deg,#d8b4fe,#c084fc);border-radius:20px;padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(124,61,110,.3)">
+  <div class="budget-banner-loans" onclick="switchPage('loans')" style="background:linear-gradient(135deg,#d8b4fe,#c084fc);border-radius:20px;padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(124,61,110,.3)">
     <div style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🏦</div>
     <div style="flex:1">
-      <div style="font-size:15px;font-weight:800;color:#4a2c5e">הלוואות ומשכנתא</div>
-      <div style="font-size:12px;color:#5d4370;margin-top:2px" id="loansBannerSub">מעקב יתרות ותשלומים</div>
+      <div class="banner-title-loans" style="font-size:15px;font-weight:800;color:#4a2c5e">הלוואות ומשכנתא</div>
+      <div class="banner-sub-loans" style="font-size:12px;color:#5d4370;margin-top:2px" id="loansBannerSub">מעקב יתרות ותשלומים</div>
     </div>
     <div style="color:rgba(255,255,255,.6);font-size:20px">‹</div>
   </div>
 
   <!-- Savings Banner -->
-  <div onclick="switchPage('savings')" style="background:linear-gradient(135deg,#a7e3b8,#7bd394);border-radius:20px;padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(74,124,111,.3)">
+  <div class="budget-banner-savings" onclick="switchPage('savings')" style="background:linear-gradient(135deg,#a7e3b8,#7bd394);border-radius:20px;padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(74,124,111,.3)">
     <div style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🐷</div>
     <div style="flex:1">
-      <div style="font-size:15px;font-weight:800;color:#1e5631">חסכונות</div>
-      <div style="font-size:12px;color:#2d6e42;margin-top:2px" id="savingsBannerSub">מעקב חסכונות ויעדים</div>
+      <div class="banner-title-savings" style="font-size:15px;font-weight:800;color:#1e5631">חסכונות</div>
+      <div class="banner-sub-savings" style="font-size:12px;color:#2d6e42;margin-top:2px" id="savingsBannerSub">מעקב חסכונות ויעדים</div>
     </div>
     <div style="color:rgba(255,255,255,.6);font-size:20px">‹</div>
   </div>
 
   <!-- Recurring Expenses Banner -->
-  <div onclick="switchPage('recurring')" style="background:linear-gradient(135deg,#fdba74,#fb923c);border-radius:20px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(232,115,106,.3)">
+  <div class="budget-banner-recurring" onclick="switchPage('recurring')" style="background:linear-gradient(135deg,#fdba74,#fb923c);border-radius:20px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(232,115,106,.3)">
     <div style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🔄</div>
     <div style="flex:1">
-      <div style="font-size:15px;font-weight:800;color:#7c3d0e">הוצאות קבועות</div>
-      <div style="font-size:12px;color:#8a5324;margin-top:2px" id="recurringBannerSub">מנויים, חוגים, תשלומים קבועים</div>
+      <div class="banner-title-recurring" style="font-size:15px;font-weight:800;color:#7c3d0e">הוצאות קבועות</div>
+      <div class="banner-sub-recurring" style="font-size:12px;color:#8a5324;margin-top:2px" id="recurringBannerSub">מנויים, חוגים, תשלומים קבועים</div>
     </div>
     <div style="color:rgba(255,255,255,.6);font-size:20px">‹</div>
   </div>
