@@ -3293,6 +3293,7 @@ async function renderFiles(folderId){
   // Store files for multi-select
   window._currentFiles=files;
   renderFileList(folderId,files);
+  prefetchFolderFiles(files); // background caching so sharing can be instant
 }
 
 function renderFileList(folderId,files){
@@ -3329,7 +3330,7 @@ function renderFileList(folderId,files){
       ${!isSelecting?`<div style="display:flex;gap:8px;width:100%">
         <a href="${f.url}" target="_blank" style="flex:1;text-align:center;background:var(--plum);color:#fff;font-size:13px;font-weight:700;padding:9px 0;border-radius:12px">פתח</a>
         <button onclick="downloadFile('${f.url}','${f.name}')" style="flex:1;background:var(--bg);color:var(--text);font-size:13px;font-weight:700;padding:9px 0;border-radius:12px">⬇️ הורד</button>
-        <button onclick="shareFile('${f.url}','${f.name}')" style="flex:1;background:var(--bg);color:var(--text);font-size:13px;font-weight:700;padding:9px 0;border-radius:12px">🔗 שתף</button>
+        <button onclick="shareFile('${f.url}','${f.name}','${f.id}')" style="flex:1;background:var(--bg);color:var(--text);font-size:13px;font-weight:700;padding:9px 0;border-radius:12px">🔗 שתף</button>
         <button onclick="renameFile('${folderId}','${f.id}')" style="background:var(--bg);color:var(--muted);font-size:16px;padding:9px 10px;border-radius:12px">✏️</button>
         <button onclick="openMoveSheet('${folderId}',['${f.id}'])" style="background:var(--bg);color:var(--muted);font-size:16px;padding:9px 10px;border-radius:12px">📁</button>
         <button onclick="deleteFile('${folderId}','${f.id}','${f.storagePath}')" style="background:var(--bg);color:#e53e3e;font-size:16px;padding:9px 10px;border-radius:12px">🗑️</button>
@@ -3395,6 +3396,7 @@ window.deleteFile=async(folderId,fileId,storagePath)=>{
   if(!confirm('למחוק מסמך זה?'))return;
   try{await deleteObject(ref(storage,storagePath));}catch(e){}
   await deleteDoc(doc(db,'folders',folderId,'files',fileId));
+  window._fileBlobCache?.delete(fileId);
   const folder=docFolders.find(f=>f.id===folderId);
   if(folder&&folder.fileCount>0)await updateDoc(doc(db,'folders',folderId),{fileCount:folder.fileCount-1});
   toast('🗑️ נמחק');
@@ -3471,7 +3473,7 @@ window.toggleFileSelect=(fileId,folderId)=>{
 window.shareSelectedOneByOne=async()=>{
   const files=window._currentFiles.filter(f=>selectedFiles.has(f.id));
   if(!files.length)return;
-  if(files.length===1){await shareFile(files[0].url,files[0].name);return;}
+  if(files.length===1){shareFile(files[0].url,files[0].name,files[0].id);return;}
   if(typeof JSZip==='undefined'){toast('❌ ספריית ZIP לא נטענה');return;}
   try{
     toast('⏳ מכין '+files.length+' קבצים...');
@@ -3514,7 +3516,7 @@ window.shareSelectedOneByOne=async()=>{
 window.shareSelectedFiles=async()=>{
   const files=window._currentFiles.filter(f=>selectedFiles.has(f.id));
   if(!files.length)return;
-  if(files.length===1){await shareFile(files[0].url,files[0].name);return;}
+  if(files.length===1){shareFile(files[0].url,files[0].name,files[0].id);return;}
   toast('⏳ מוריד '+files.length+' קבצים...');
   let done=0;
   for(const f of files){
@@ -3534,73 +3536,66 @@ window.shareSelectedFiles=async()=>{
   toast('✅ '+done+' קבצים הורדו — עכשיו תוכל לשלוח אותם');
 };
 
+// ══ BACKGROUND FILE CACHE (for instant, reliable sharing) ══
+// We fetch files quietly in the background as soon as a folder opens, so
+// that by the time the user taps "share" the bytes may already be sitting
+// in memory - letting us call navigator.share() with zero delay (no lost
+// user-gesture). Files still downloading (or too large) fall back to link
+// sharing automatically, which is always instant.
+window._fileBlobCache=window._fileBlobCache||new Map();
+const FILE_CACHE_MAX_SIZE=15*1024*1024; // don't proactively cache files above 15MB
+const FILE_CACHE_MAX_ENTRIES=30;
+
 function guessMimeFromName(name){
   const ext=(name.split('.').pop()||'').toLowerCase();
   const map={pdf:'application/pdf',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',heic:'image/heic',heif:'image/heif',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',txt:'text/plain'};
   return map[ext]||'';
 }
 
-window.shareFile=async(url,name)=>{
-  try{
-    toast('⏳ מכין לשיתוף...');
-    // Race the download against a timeout - large/slow files can expire
-    // the browser's "user activation" window needed for navigator.share(),
-    // so if it's taking too long we fall back to link-sharing instead of
-    // risking a failed share after a long wait.
-    const controller=new AbortController();
-    const fetchPromise=fetch(url,{signal:controller.signal}).then(async r=>{
-      if(!r.ok)throw new Error('הורדה נכשלה ('+r.status+')');
-      return await r.blob();
-    });
-    const timeoutPromise=new Promise((_,reject)=>setTimeout(()=>reject(new Error('TIMEOUT')),3000));
-
-    let blob;
+async function prefetchFolderFiles(files){
+  for(const f of files){
+    if(window._fileBlobCache.has(f.id))continue;
     try{
-      blob=await Promise.race([fetchPromise,timeoutPromise]);
-    }catch(raceErr){
-      controller.abort();
-      if(navigator.share){
-        await navigator.share({title:name,url});
-        toast('ℹ️ שותף כקישור (קובץ גדול/איטי)');
-      } else {
-        await navigator.clipboard.writeText(url);
-        toast('🔗 הקישור הועתק!');
+      const resp=await fetch(f.url);
+      if(!resp.ok)continue;
+      const lenHeader=resp.headers.get('content-length');
+      if(lenHeader&&Number(lenHeader)>FILE_CACHE_MAX_SIZE)continue;
+      const blob=await resp.blob();
+      if(blob.size>FILE_CACHE_MAX_SIZE)continue;
+      if(window._fileBlobCache.size>=FILE_CACHE_MAX_ENTRIES){
+        const oldestKey=window._fileBlobCache.keys().next().value;
+        window._fileBlobCache.delete(oldestKey);
       }
-      return;
-    }
+      window._fileBlobCache.set(f.id,blob);
+    }catch(e){/* quietly skip - will just fall back to link sharing */}
+  }
+}
 
-    // Force a proper MIME type by file extension - some uploaded files ended
-    // up with a generic/empty content-type, which makes Chrome refuse to
-    // share them as files ("Permission denied") even though canShare said ok.
-    const properType=guessMimeFromName(name)||blob.type||'application/octet-stream';
-    const file=new File([blob],name,{type:properType});
+window.shareFile=(url,name,fileId)=>{
+  const cachedBlob=fileId&&window._fileBlobCache.get(fileId);
+  if(cachedBlob&&navigator.share){
+    const properType=guessMimeFromName(name)||cachedBlob.type||'application/octet-stream';
+    const file=new File([cachedBlob],name,{type:properType});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
-      try{
-        await navigator.share({files:[file],title:name});
-        return;
-      }catch(shareErr){
-        if(shareErr.name==='AbortError')return;
-        // File share rejected (e.g. "Permission denied") - fall back to link
-        console.error('file share failed',shareErr);
-      }
-    }
-    if(navigator.share){
-      await navigator.share({title:name,url});
-      toast('ℹ️ שותף כקישור');
+      navigator.share({files:[file],title:name}).catch(e=>{
+        if(e.name==='AbortError')return;
+        // Still zero-delay - try link share right away, no awaits in between
+        navigator.share({title:name,url}).catch(e2=>{
+          if(e2.name==='AbortError')return;
+          navigator.clipboard.writeText(url).then(()=>toast('🔗 הקישור הועתק!')).catch(()=>toast('❌ שגיאה בשיתוף'));
+        });
+      });
       return;
     }
-    await navigator.clipboard.writeText(url);
-    toast('🔗 הקישור הועתק!');
-  }catch(e){
-    if(e.name==='AbortError')return;
-    console.error('share error',e);
-    try{
-      if(navigator.share){await navigator.share({title:name,url});toast('ℹ️ שותף כקישור');return;}
-      await navigator.clipboard.writeText(url);
-      toast('🔗 הקישור הועתק!');
-    }catch(e2){
-      if(e2.name!=='AbortError')toast('❌ '+(e.message||'שגיאה בשיתוף'));
-    }
+  }
+  // Not cached yet (still downloading / too large) - share link instantly
+  if(navigator.share){
+    navigator.share({title:name,url}).catch(e=>{
+      if(e.name==='AbortError')return;
+      navigator.clipboard.writeText(url).then(()=>toast('🔗 הקישור הועתק!')).catch(()=>toast('❌ שגיאה בשיתוף'));
+    });
+  } else {
+    navigator.clipboard.writeText(url).then(()=>toast('🔗 הקישור הועתק!')).catch(()=>toast('❌ שגיאה בשיתוף'));
   }
 };
 
@@ -3674,6 +3669,7 @@ window.performMoveCopy=async(targetFolderId)=>{
       if(mode==='move'){
         try{await deleteObject(ref(storage,f.storagePath));}catch(e){}
         await deleteDoc(doc(db,'folders',sourceFolderId,'files',f.id));
+        window._fileBlobCache?.delete(f.id);
         const sourceFolder=docFolders.find(x=>x.id===sourceFolderId);
         if(sourceFolder&&sourceFolder.fileCount>0)await updateDoc(doc(db,'folders',sourceFolderId),{fileCount:sourceFolder.fileCount-1});
       }
