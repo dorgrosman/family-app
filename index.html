@@ -3535,22 +3535,42 @@ window.shareSelectedFiles=async()=>{
 };
 
 window.shareFile=async(url,name)=>{
-  let file=null;
   try{
     toast('⏳ מכין לשיתוף...');
-    const resp=await fetch(url);
-    if(!resp.ok)throw new Error('הורדה נכשלה ('+resp.status+')');
-    const blob=await resp.blob();
-    const sizeMB=(blob.size/1024/1024).toFixed(1);
-    file=new File([blob],name,{type:blob.type||'application/octet-stream'});
+    // Race the download against a short timeout - large/slow files can expire
+    // the browser's "user activation" window needed for navigator.share(),
+    // so if it's taking too long we fall back immediately to link-sharing
+    // instead of risking a failed share after a long wait.
+    const controller=new AbortController();
+    const fetchPromise=fetch(url,{signal:controller.signal}).then(async r=>{
+      if(!r.ok)throw new Error('הורדה נכשלה ('+r.status+')');
+      return await r.blob();
+    });
+    const timeoutPromise=new Promise((_,reject)=>setTimeout(()=>reject(new Error('TIMEOUT')),1400));
+
+    let blob;
+    try{
+      blob=await Promise.race([fetchPromise,timeoutPromise]);
+    }catch(raceErr){
+      controller.abort();
+      if(navigator.share){
+        await navigator.share({title:name,url});
+        toast('ℹ️ שותף כקישור (קובץ גדול/איטי)');
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast('🔗 הקישור הועתק!');
+      }
+      return;
+    }
+
+    const file=new File([blob],name,{type:blob.type||'application/octet-stream'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
       await navigator.share({files:[file],title:name});
       return;
     }
-    // File share not supported (possibly too large: sizeMB MB) - fall back to URL share
     if(navigator.share){
       await navigator.share({title:name,url});
-      toast('ℹ️ שותף כקישור (קובץ '+sizeMB+'MB)');
+      toast('ℹ️ שותף כקישור');
       return;
     }
     await navigator.clipboard.writeText(url);
