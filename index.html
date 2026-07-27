@@ -3534,19 +3534,25 @@ window.shareSelectedFiles=async()=>{
   toast('✅ '+done+' קבצים הורדו — עכשיו תוכל לשלוח אותם');
 };
 
+function guessMimeFromName(name){
+  const ext=(name.split('.').pop()||'').toLowerCase();
+  const map={pdf:'application/pdf',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',heic:'image/heic',heif:'image/heif',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',txt:'text/plain'};
+  return map[ext]||'';
+}
+
 window.shareFile=async(url,name)=>{
   try{
     toast('⏳ מכין לשיתוף...');
-    // Race the download against a short timeout - large/slow files can expire
+    // Race the download against a timeout - large/slow files can expire
     // the browser's "user activation" window needed for navigator.share(),
-    // so if it's taking too long we fall back immediately to link-sharing
-    // instead of risking a failed share after a long wait.
+    // so if it's taking too long we fall back to link-sharing instead of
+    // risking a failed share after a long wait.
     const controller=new AbortController();
     const fetchPromise=fetch(url,{signal:controller.signal}).then(async r=>{
       if(!r.ok)throw new Error('הורדה נכשלה ('+r.status+')');
       return await r.blob();
     });
-    const timeoutPromise=new Promise((_,reject)=>setTimeout(()=>reject(new Error('TIMEOUT')),1400));
+    const timeoutPromise=new Promise((_,reject)=>setTimeout(()=>reject(new Error('TIMEOUT')),3000));
 
     let blob;
     try{
@@ -3563,10 +3569,20 @@ window.shareFile=async(url,name)=>{
       return;
     }
 
-    const file=new File([blob],name,{type:blob.type||'application/octet-stream'});
+    // Force a proper MIME type by file extension - some uploaded files ended
+    // up with a generic/empty content-type, which makes Chrome refuse to
+    // share them as files ("Permission denied") even though canShare said ok.
+    const properType=guessMimeFromName(name)||blob.type||'application/octet-stream';
+    const file=new File([blob],name,{type:properType});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
-      await navigator.share({files:[file],title:name});
-      return;
+      try{
+        await navigator.share({files:[file],title:name});
+        return;
+      }catch(shareErr){
+        if(shareErr.name==='AbortError')return;
+        // File share rejected (e.g. "Permission denied") - fall back to link
+        console.error('file share failed',shareErr);
+      }
     }
     if(navigator.share){
       await navigator.share({title:name,url});
@@ -3578,7 +3594,6 @@ window.shareFile=async(url,name)=>{
   }catch(e){
     if(e.name==='AbortError')return;
     console.error('share error',e);
-    // Last resort - try URL share or clipboard
     try{
       if(navigator.share){await navigator.share({title:name,url});toast('ℹ️ שותף כקישור');return;}
       await navigator.clipboard.writeText(url);
