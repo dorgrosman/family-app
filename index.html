@@ -1002,7 +1002,7 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
   </div>
   <div class="field-label">מה לקנות?</div>
   <div style="position:relative;margin-bottom:0">
-    <input class="input-field" id="shopName" placeholder="לחץ כאן להקלדה..." oninput="onShopNameInput()" style="padding-left:48px">
+    <input class="input-field" id="shopName" placeholder="למשל: עגבניה, מלפפון, חלב" oninput="onShopNameInput()" style="padding-left:48px">
     <button type="button" id="shopVoiceBtn" onclick="startShopVoiceInput()" style="position:absolute;left:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:var(--plum-light);color:var(--plum);font-size:16px;display:none;align-items:center;justify-content:center">🎤</button>
   </div>
   <div style="height:16px"></div>
@@ -1439,6 +1439,7 @@ function guessShopCategory(name){
 
 window.onShopNameInput=()=>{
   const name=document.getElementById('shopName').value;
+  if(name.includes(',')||name.includes('،'))return; // multi-item list - each gets its own category on save
   const guess=guessShopCategory(name);
   if(guess){
     const sel=document.getElementById('shopCat');
@@ -1448,13 +1449,32 @@ window.onShopNameInput=()=>{
 
 // ══ SHOPPING: VOICE INPUT ══
 let shopRecognition=null;
+let shopVoiceListening=false;
+let shopVoiceChunks=[];
 (function setupShopVoice(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR)return; // unsupported browser - mic button stays hidden
   shopRecognition=new SR();
   shopRecognition.lang='he-IL';
+  shopRecognition.continuous=true; // keep listening across pauses, so a spoken list ("עגבניה... מלפפון... חלב") becomes several items
   shopRecognition.interimResults=false;
   shopRecognition.maxAlternatives=1;
+  shopRecognition.onresult=(e)=>{
+    // Each fired result (separated by natural pauses in continuous mode) becomes one list item
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)shopVoiceChunks.push(e.results[i][0].transcript.trim());
+    }
+    document.getElementById('shopName').value=shopVoiceChunks.join(', ');
+    onShopNameInput();
+  };
+  shopRecognition.onerror=(e)=>{
+    if(e.error!=='no-speech')toast('🎤 לא הצלחתי לשמוע, נסה שוב');
+  };
+  shopRecognition.onend=()=>{
+    shopVoiceListening=false;
+    const btn=document.getElementById('shopVoiceBtn');
+    if(btn){btn.textContent='🎤';btn.style.background='var(--plum-light)';}
+  };
   document.addEventListener('DOMContentLoaded',()=>{
     const btn=document.getElementById('shopVoiceBtn');
     if(btn)btn.style.display='flex';
@@ -1464,15 +1484,15 @@ let shopRecognition=null;
 window.startShopVoiceInput=()=>{
   if(!shopRecognition){toast('🎤 הדפדפן לא תומך בהקלטה קולית');return;}
   const btn=document.getElementById('shopVoiceBtn');
-  btn.textContent='🔴';
-  shopRecognition.onresult=(e)=>{
-    const text=e.results[0][0].transcript;
-    document.getElementById('shopName').value=text;
-    onShopNameInput();
-  };
-  shopRecognition.onerror=()=>{toast('🎤 לא הצלחתי לשמוע, נסה שוב');};
-  shopRecognition.onend=()=>{btn.textContent='🎤';};
-  try{shopRecognition.start();}catch(e){btn.textContent='🎤';}
+  if(shopVoiceListening){
+    shopRecognition.stop();
+    return;
+  }
+  shopVoiceChunks=[];
+  shopVoiceListening=true;
+  btn.textContent='⏹️';
+  btn.style.background='#e8736a';
+  try{shopRecognition.start();}catch(e){shopVoiceListening=false;btn.textContent='🎤';btn.style.background='var(--plum-light)';}
 };
 function renderShopping(){
   const pending=shopping.filter(i=>!i.done),done=shopping.filter(i=>i.done);
@@ -1539,11 +1559,20 @@ window.toggleShop=async(id,done)=>{await updateDoc(doc(db,'shopping',id),{done})
 window.deleteShop=async id=>{await deleteDoc(doc(db,'shopping',id));};
 window.clearDoneShopping=async()=>{for(const i of shopping.filter(i=>i.done))await deleteDoc(doc(db,'shopping',i.id));toast('🗑️ נוקה!');};
 window.saveShopItem=async()=>{
-  const name=document.getElementById('shopName').value.trim();if(!name)return;
-  const emoji=document.getElementById('shopCat').value;
-  await addDoc(collection(db,'shopping'),{name,emoji,addedBy:document.getElementById('shopBy').value,done:false,createdAt:Date.now()});
-  closeSheet();toast('🛒 נוסף!');
-  sendPushToOthers('🛒 פריט חדש ברשימה!',name);
+  const raw=document.getElementById('shopName').value.trim();if(!raw)return;
+  const manualEmoji=document.getElementById('shopCat').value;
+  const addedBy=document.getElementById('shopBy').value;
+  // Support multiple items separated by commas (typed or spoken with pauses)
+  const items=raw.split(/[,،]/).map(s=>s.trim()).filter(Boolean);
+  for(const name of items){
+    // Each item gets its own auto-guessed category; if there's only one
+    // item, respect whatever the user manually picked in the dropdown.
+    const emoji=items.length>1?(guessShopCategory(name)||'🛍️'):manualEmoji;
+    await addDoc(collection(db,'shopping'),{name,emoji,addedBy,done:false,createdAt:Date.now()});
+  }
+  closeSheet();
+  toast(items.length>1?('🛒 '+items.length+' פריטים נוספו!'):'🛒 נוסף!');
+  sendPushToOthers('🛒 '+(items.length>1?items.length+' פריטים חדשים!':'פריט חדש ברשימה!'),items.join(', '));
 };
 
 // CALENDAR
