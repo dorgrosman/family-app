@@ -1001,7 +1001,11 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
     <div class="sheet-title">פריט חדש</div>
   </div>
   <div class="field-label">מה לקנות?</div>
-  <input class="input-field" id="shopName" placeholder="לחץ כאן להקלדה...">
+  <div style="position:relative;margin-bottom:0">
+    <input class="input-field" id="shopName" placeholder="לחץ כאן להקלדה..." oninput="onShopNameInput()" style="padding-left:48px">
+    <button type="button" id="shopVoiceBtn" onclick="startShopVoiceInput()" style="position:absolute;left:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:var(--plum-light);color:var(--plum);font-size:16px;display:none;align-items:center;justify-content:center">🎤</button>
+  </div>
+  <div style="height:16px"></div>
   <div class="field-label">קטגוריה</div>
   <select class="select-field" id="shopCat">
     <option value="🥦">🥦 ירקות ופירות</option>
@@ -1410,6 +1414,66 @@ const SHOP_CATS=[
   {emoji:'🥖',label:'לחם ומאפים'},
   {emoji:'🛍️',label:'אחר'},
 ];
+
+// ══ SHOPPING: AUTO-CATEGORIZE BY KEYWORD ══
+const SHOP_KEYWORDS={
+  '🥦':['עגבני','מלפפון','בצל','תפוח עץ','תפוח אדמה','בננ','גזר','פלפל','חסה','לימון','אבוקדו','תות','ענב','אבטיח','מלון','שום','תרד','כרוב','ברוקולי','קישוא','חציל','פטריי','אנני','אפרסק','שזיף','משמש','מנגו','קיווי','אגס','תמר','רימון','צנונית','סלרי','כוסבר','פטרוזיליה','נענע','שמיר','בטטה'],
+  '🥛':['חלב','גבינה','יוגורט','קוטג','שמנת','חמאה','לבן','ביצים','ביצה','מעדן','שוקו','אשל','דנונה','מילקי'],
+  '🍗':['עוף','בשר','דג','סלמון','טונה טרי','הודו','כבש','קציצ','נקניק','המבורגר','שניצל','כתף','אנטריקוט','פרגית','חזה עוף','כרעיים','בקר'],
+  '🥫':['אורז','פסטה','קמח','סוכר','שימור','תירס','טונה משומר','עדשים','חומוס','טחינה','שמן','חומץ','קורנפלקס','דגני','קפה','תה','מלח','תבלין','רסק עגבניות','פתיתים','קוסקוס','שעועית','אפונה','זיתים','חרדל','קטשופ','מיונז','סילאן','דבש','מרק','אבקת מרק','שמרים','סודה לשתייה','אבקת אפייה','שקדים','אגוז','גרעינים','צימוקים','בורגול'],
+  '🧴':['סבון','אקונומיקה','נייר טואלט','מגבות נייר','שקיות אשפה','מרכך','אבקת כביסה','מגבונים','נוזל כלים','ניקוי','מטהר אוויר','משחת שיניים','שמפו','מרכך שיער','דאודורנט','פדים','טישו','אלכוג׳ל','כפפות','ספוג','נייר אפייה','רדיד אלומיניום','שקית','חד פעמי'],
+  '🍫':['שוקולד','חטיף','במבה','ביסלי','עוגי','גלידה','ממתק','צ׳יפס','קרקר','חטיפי','דובוני','וופל','בייגלה'],
+  '🥖':['לחם','פיתה','לחמניה','בגט','חלה','קרואסון','עוגה','טורטיה','לחמית','מצה'],
+};
+
+function guessShopCategory(name){
+  const clean=(name||'').trim().toLowerCase();
+  if(!clean)return null;
+  for(const emoji in SHOP_KEYWORDS){
+    for(const kw of SHOP_KEYWORDS[emoji]){
+      if(clean.includes(kw))return emoji;
+    }
+  }
+  return null;
+}
+
+window.onShopNameInput=()=>{
+  const name=document.getElementById('shopName').value;
+  const guess=guessShopCategory(name);
+  if(guess){
+    const sel=document.getElementById('shopCat');
+    if(sel)sel.value=guess;
+  }
+};
+
+// ══ SHOPPING: VOICE INPUT ══
+let shopRecognition=null;
+(function setupShopVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR)return; // unsupported browser - mic button stays hidden
+  shopRecognition=new SR();
+  shopRecognition.lang='he-IL';
+  shopRecognition.interimResults=false;
+  shopRecognition.maxAlternatives=1;
+  document.addEventListener('DOMContentLoaded',()=>{
+    const btn=document.getElementById('shopVoiceBtn');
+    if(btn)btn.style.display='flex';
+  });
+})();
+
+window.startShopVoiceInput=()=>{
+  if(!shopRecognition){toast('🎤 הדפדפן לא תומך בהקלטה קולית');return;}
+  const btn=document.getElementById('shopVoiceBtn');
+  btn.textContent='🔴';
+  shopRecognition.onresult=(e)=>{
+    const text=e.results[0][0].transcript;
+    document.getElementById('shopName').value=text;
+    onShopNameInput();
+  };
+  shopRecognition.onerror=()=>{toast('🎤 לא הצלחתי לשמוע, נסה שוב');};
+  shopRecognition.onend=()=>{btn.textContent='🎤';};
+  try{shopRecognition.start();}catch(e){btn.textContent='🎤';}
+};
 function renderShopping(){
   const pending=shopping.filter(i=>!i.done),done=shopping.filter(i=>i.done);
   document.getElementById('shopRemainNum').textContent=pending.length;
@@ -3117,12 +3181,18 @@ window.OneSignalDeferred.push(async function(OneSignal){
 
 async function sendPushToOthers(title,body){
   try{
-    await fetch('https://onesignal-proxy.ddorgrosman.workers.dev/',{
+    const resp=await fetch('https://onesignal-proxy.ddorgrosman.workers.dev/',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({title,body})
     });
-  }catch(e){console.log('Push send error:',e);}
+    const respText=await resp.text();
+    console.log('Push worker response:',resp.status,respText);
+    if(!resp.ok)toast('⚠️ Push שגיאה: '+resp.status+' - '+respText.slice(0,80));
+  }catch(e){
+    console.log('Push send error:',e);
+    toast('⚠️ Push נכשל: '+e.message);
+  }
 }
 
 window.requestNotifPermission=async()=>{
