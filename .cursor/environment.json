@@ -1,0 +1,16 @@
+{
+  "name": "family-app (הבית שלנו)",
+  "terminals": [
+    {
+      "name": "web",
+      "command": "python3 -m http.server 8000 --bind 0.0.0.0",
+      "description": "Serves the static PWA (index.html + assets) at http://localhost:8000. The app talks directly to Firebase from the browser, so no backend build is required."
+    }
+  ],
+  "ports": [
+    {
+      "name": "web server",
+      "port": 8000
+    }
+  ]
+}
