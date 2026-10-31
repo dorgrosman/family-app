@@ -3180,23 +3180,59 @@ function renderBudget(){
 function renderBarChart(year){
   const el=document.getElementById('budgetBarChart');
   if(!el)return;
+  // Split each month into credit-card charges vs everything else (standing orders, loan payments, cash...)
   const months=[];
   for(let m=0;m<12;m++){
     const exps=getMonthExpenses(year,m);
-    months.push({label:HEB_MONTHS_SHORT[m],total:exps.reduce((s,e)=>s+Number(e.amount||0),0)});
+    let credit=0,other=0;
+    exps.forEach(e=>{
+      const a=Number(e.amount||0);
+      if((e.paymentMethod||'')==='כרטיס אשראי')credit+=a;else other+=a;
+    });
+    months.push({label:HEB_MONTHS_SHORT[m],credit,other,total:credit+other});
   }
   const maxVal=Math.max(...months.map(m=>m.total),1);
-  el.innerHTML=`<div style="display:flex;align-items:flex-end;gap:4px;height:130px;padding:0 2px">
-    ${months.map((m,i)=>{
-      const h=m.total?Math.max(6,Math.round(m.total/maxVal*100)):3;
-      const isActive=i===budgetMonth;
-      return `<div onclick="selectBudgetMonth(${i})" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border-radius:6px;padding:2px 0;transition:background .15s" onmouseenter="this.style.background='rgba(124,61,110,.08)'" onmouseleave="this.style.background='transparent'">
-        <span style="font-size:8px;color:${isActive?'var(--plum)':'var(--muted)'};white-space:nowrap;font-weight:${isActive?700:400}">${m.total?fmt(m.total):''}</span>
-        <div style="width:100%;height:${h}px;background:${isActive?'var(--plum)':'var(--plum-light)'};border-radius:4px 4px 0 0;transition:all .3s"></div>
-        <span style="font-size:9px;color:${isActive?'var(--plum)':'var(--muted)'};font-weight:${isActive?700:400}">${m.label}</span>
-      </div>`;
-    }).join('')}
-  </div>`;
+  const yCredit=months.reduce((s,m)=>s+m.credit,0);
+  const yOther=months.reduce((s,m)=>s+m.other,0);
+  const pct=(a,b)=>b?Math.round(a/b*100):0;
+  const dot=col=>'<span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+col+';margin-left:6px"></span>';
+  const C_CREDIT='var(--plum)',C_OTHER='var(--sage)';
+
+  const bars=months.map((m,i)=>{
+    const totalH=m.total?Math.max(6,Math.round(m.total/maxVal*100)):3;
+    let creditH=m.total?Math.round(totalH*m.credit/m.total):0;
+    if(m.credit>0&&creditH<2)creditH=2;
+    const otherH=Math.max(0,totalH-creditH);
+    const isActive=i===budgetMonth;
+    const segs=m.total
+      ?'<div style="width:100%;height:'+totalH+'px;border-radius:4px 4px 0 0;overflow:hidden;display:flex;flex-direction:column;opacity:'+(isActive?1:.55)+';transition:all .3s">'+
+         '<div style="height:'+otherH+'px;background:'+C_OTHER+'"></div>'+
+         '<div style="height:'+creditH+'px;background:'+C_CREDIT+'"></div>'+
+       '</div>'
+      :'<div style="width:100%;height:3px;background:var(--plum-light);border-radius:4px 4px 0 0"></div>';
+    return '<div onclick="selectBudgetMonth('+i+')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border-radius:6px;padding:2px 0;transition:background .15s" onmouseenter="this.style.background=\'rgba(124,61,110,.08)\'" onmouseleave="this.style.background=\'transparent\'">'+
+      '<span style="font-size:8px;color:'+(isActive?'var(--plum)':'var(--muted)')+';white-space:nowrap;font-weight:'+(isActive?700:400)+'">'+(m.total?fmt(m.total):'')+'</span>'+
+      segs+
+      '<span style="font-size:9px;color:'+(isActive?'var(--plum)':'var(--muted)')+';font-weight:'+(isActive?700:400)+'">'+m.label+'</span>'+
+    '</div>';
+  }).join('');
+
+  const sel=months[budgetMonth]||months[0];
+  const row=(label,col,val,total)=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0"><span style="color:var(--muted)">'+dot(col)+label+'</span><b style="color:var(--text)">'+fmt(val)+(total?' <span style="font-weight:500;color:var(--muted)">('+pct(val,total)+'%)</span>':'')+'</b></div>';
+
+  el.innerHTML=
+    '<div style="display:flex;gap:14px;justify-content:flex-start;font-size:11px;color:var(--muted);margin-bottom:8px">'+
+      '<span>'+dot(C_CREDIT)+'אשראי</span><span>'+dot(C_OTHER)+'קבועות / אחר</span>'+
+    '</div>'+
+    '<div style="display:flex;align-items:flex-end;gap:4px;height:130px;padding:0 2px">'+bars+'</div>'+
+    '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:12px">'+
+      '<div style="font-weight:700;color:var(--text);margin-bottom:2px">'+HEB_MONTHS_FULL[budgetMonth]+'</div>'+
+      row('אשראי',C_CREDIT,sel.credit,sel.total)+
+      row('קבועות / אחר',C_OTHER,sel.other,sel.total)+
+      '<div style="font-weight:700;color:var(--text);margin:8px 0 2px">כל השנה</div>'+
+      row('אשראי',C_CREDIT,yCredit,yCredit+yOther)+
+      row('קבועות / אחר',C_OTHER,yOther,yCredit+yOther)+
+    '</div>';
 }
 
 function renderYearlyDonutChart(year){
