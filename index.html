@@ -557,6 +557,15 @@ input, select { font-family: inherit; direction: rtl; font-size: 16px; }
     <div style="color:rgba(255,255,255,.6);font-size:20px">‹</div>
   </div>
 
+  <!-- Import Tracker -->
+  <div style="background:var(--card);border-radius:20px;padding:16px 18px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+    <div onclick="toggleImportTracker()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer">
+      <div style="font-size:15px;font-weight:800;color:var(--text)">📂 מעקב ייבוא קבצים</div>
+      <div id="importTrackerSummary" style="font-size:12px;font-weight:700;color:var(--muted)"></div>
+    </div>
+    <div id="importTrackerBody" style="display:none;margin-top:14px"></div>
+  </div>
+
   <!-- Monthly Bar Chart -->
   <div style="background:var(--card);border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -2652,6 +2661,8 @@ window.deleteEditLoan=async()=>{
   if(confirm('למחוק הלוואה?')){await deleteDoc(doc(db,'loans',editingLoanId));closeSheet();toast('🗑️ נמחק');}
 };
 let pendingImportRows=[];
+let pendingImportFiles=[];
+let importLog=[];
 
 // Auto-categorize by merchant name
 function autoCategorize(name=''){
@@ -2873,6 +2884,7 @@ window.importCreditFile=function(input){
     let allTransactions=[];
     let processed=0;
     let companiesFound=[];
+    let fileResults=[];
     files.forEach(file=>{
       const reader=new FileReader();
       reader.onload=function(e){
@@ -2882,10 +2894,12 @@ window.importCreditFile=function(input){
           const {transactions,company}=parseCreditFile(workbook);
           allTransactions=[...allTransactions,...transactions];
           companiesFound.push(company);
+          if(transactions.length)fileResults.push({fileName:file.name,company,transactions});
         }catch(err){console.log('Error reading file:',err);}
         processed++;
         if(processed===files.length){
           pendingImportRows=allTransactions;
+          pendingImportFiles=fileResults;
           showImportPreview(allTransactions,companiesFound.join(', '));
         }
       };
@@ -2903,6 +2917,7 @@ window.importCreditFile=function(input){
       const workbook=XLSX.read(data,{type:'array',cellDates:true});
       const {transactions,company,error}=parseCreditFile(workbook);
       pendingImportRows=transactions;
+      pendingImportFiles=(transactions.length&&!error)?[{fileName:file.name,company,transactions}]:[];
       showImportPreview(transactions,company,error);
     }catch(err){
       document.getElementById('importStatus').textContent='שגיאה בקריאת הקובץ: '+err.message;
@@ -2955,6 +2970,105 @@ function showImportPreview(transactions,company,error){
   confirmBtn.style.display='block';
 }
 
+// ══ IMPORT TRACKER ══
+const IMPORT_COMPANIES=[{key:'cal',label:'כ.א.ל'},{key:'max',label:'מקס'},{key:'isracard',label:'ישראכרט'}];
+
+function normCompany(name){
+  const s=String(name||'');
+  if(/כ\.?א\.?ל|cal/i.test(s))return 'cal';
+  if(/מקס|max/i.test(s))return 'max';
+  if(/ישראכרט|isracard/i.test(s))return 'isracard';
+  return 'other';
+}
+function escHtml(s){return String(s==null?'':s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));}
+
+async function logImportedFiles(files){
+  for(const f of (files||[])){
+    if(!f.transactions||!f.transactions.length)continue;
+    const dates=f.transactions.map(t=>t.date).sort();
+    const from=dates[0],to=dates[dates.length-1];
+    const monthCounts={};
+    f.transactions.forEach(t=>{const m=t.date.slice(0,7);monthCounts[m]=(monthCounts[m]||0)+1;});
+    const company=normCompany(f.company);
+    // Same company + same date range = same doc, so re-importing a file never creates a duplicate entry
+    const id=company+'_'+from+'_'+to;
+    try{
+      await setDoc(doc(db,'importLog',id),{company,companyLabel:f.company||company,fileName:f.fileName||'',from,to,monthCounts,total:f.transactions.length,uploadedAt:Date.now(),uploadedBy:myName});
+    }catch(e){console.log('importLog error',e);}
+  }
+}
+
+window.toggleImportTracker=()=>{
+  const b=document.getElementById('importTrackerBody');
+  if(b)b.style.display=b.style.display==='none'?'block':'none';
+};
+
+window.deleteImportLog=async(id)=>{
+  if(!confirm('להסיר את הרישום מהמעקב? (העסקאות עצמן לא יימחקו)'))return;
+  await deleteDoc(doc(db,'importLog',id));
+};
+
+function renderImportTracker(){
+  const body=document.getElementById('importTrackerBody'),sum=document.getElementById('importTrackerSummary');
+  if(!body||!sum)return;
+  if(!importLog.length){
+    sum.textContent='';
+    body.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px;padding:8px 0">עדיין לא יובאו קבצים. אחרי הייבוא הבא יופיע כאן מעקב לפי חודש וחברה.<br>קבצים שכבר ייבאת בעבר: אפשר להעלות אותם שוב, לא ייווצרו כפילויות והם יירשמו במעקב.</div>';
+    return;
+  }
+  const counts={};
+  const allMonths=new Set();
+  importLog.forEach(l=>{
+    Object.entries(l.monthCounts||{}).forEach(([mk,n])=>{
+      allMonths.add(mk);
+      const k=(l.company||'other')+'|'+mk;
+      counts[k]=(counts[k]||0)+n;
+    });
+  });
+  const sorted=[...allMonths].sort();
+  const now=new Date();
+  const curKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  // Range: from the earliest imported month up to the current month
+  const months=[];
+  let [y,m]=sorted[0].split('-').map(Number);
+  for(let guard=0;guard<240;guard++){
+    const key=y+'-'+String(m).padStart(2,'0');
+    months.push(key);
+    if(key>=curKey)break;
+    m++;if(m>12){m=1;y++;}
+  }
+  const shown=months.slice(-12).reverse();
+  let missing=0;
+  shown.forEach(mk=>{if(mk<curKey)IMPORT_COMPANIES.forEach(c=>{if(!counts[c.key+'|'+mk])missing++;});});
+  sum.textContent=missing?('⚠️ חסרים '+missing):'✅ הכל מעודכן';
+  sum.style.color=missing?'var(--rose)':'var(--sage)';
+
+  let html='<table style="width:100%;border-collapse:separate;border-spacing:0 6px;text-align:center;font-size:12px"><thead><tr><th style="text-align:right;color:var(--muted);font-weight:600">חודש</th>'+
+    IMPORT_COMPANIES.map(c=>'<th style="color:var(--muted);font-weight:600">'+c.label+'</th>').join('')+'</tr></thead><tbody>';
+  shown.forEach(mk=>{
+    const [yy,mm]=mk.split('-').map(Number);
+    html+='<tr><td style="text-align:right;font-weight:700;color:var(--text)">'+HEB_MONTHS_SHORT[mm-1]+' '+String(yy).slice(2)+'</td>';
+    IMPORT_COMPANIES.forEach(c=>{
+      const n=counts[c.key+'|'+mk];
+      if(n)html+='<td><div style="background:rgba(74,222,128,.18);border-radius:10px;padding:5px 2px"><div style="font-size:14px">✅</div><div style="font-size:10px;color:var(--muted)">'+n+'</div></div></td>';
+      else if(mk<curKey)html+='<td><div style="background:rgba(232,115,106,.15);border-radius:10px;padding:8px 2px;font-size:14px">⬜</div></td>';
+      else html+='<td style="color:var(--muted)">—</td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  html+='<div style="font-size:11px;color:var(--muted);margin-top:4px">המספר מתחת ל-✅ הוא כמות העסקאות מהקובץ באותו חודש. מספר נמוך מאוד = כנראה קובץ שמכסה רק חלק מהחודש.</div>';
+
+  const fmtD=d=>d.slice(8,10)+'/'+d.slice(5,7);
+  const recent=[...importLog].sort((a,b)=>(b.uploadedAt||0)-(a.uploadedAt||0)).slice(0,6);
+  html+='<div style="font-size:13px;font-weight:700;color:var(--text);margin:16px 0 6px">ייבואים אחרונים</div>'+
+    recent.map(l=>'<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border)">'+
+      '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--text)">'+escHtml(l.companyLabel||l.company)+' • '+fmtD(l.from)+'–'+fmtD(l.to)+'/'+l.to.slice(2,4)+'</div>'+
+      '<div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+l.total+' עסקאות • '+escHtml(l.fileName)+'</div></div>'+
+      '<button onclick="deleteImportLog(\''+l.id+'\')" style="font-size:15px;color:var(--muted)">🗑️</button></div>').join('');
+  body.innerHTML=html;
+}
+
 window.confirmImport=async()=>{
   if(!pendingImportRows.length)return;
   document.getElementById('importConfirmBtn').disabled=true;
@@ -2972,9 +3086,10 @@ window.confirmImport=async()=>{
   const skipped=pendingImportRows.length-newRows.length;
 
   if(!newRows.length){
+    await logImportedFiles(pendingImportFiles);
     closeSheet();
-    pendingImportRows=[];
-    toast('⚠️ כל העסקאות כבר קיימות — לא נוסף כלום');
+    pendingImportRows=[];pendingImportFiles=[];
+    toast('⚠️ כל העסקאות כבר קיימות — הקובץ נרשם במעקב, לא נוסף כלום');
     return;
   }
 
@@ -2994,8 +3109,9 @@ window.confirmImport=async()=>{
     count++;
   }
 
+  await logImportedFiles(pendingImportFiles);
   closeSheet();
-  pendingImportRows=[];
+  pendingImportRows=[];pendingImportFiles=[];
   const btn=document.getElementById('importConfirmBtn');
   if(btn){btn.disabled=false;btn.textContent='ייבא עסקאות לאפליקציה ✅';}
   toast('✅ יובאו '+count+' עסקאות'+(skipped?' • '+skipped+' כפילויות דולגו':'')+'!');
@@ -3403,6 +3519,10 @@ function initListeners(){
     const disp=document.getElementById('primeRateDisplay');
     if(disp)disp.textContent=window.primeRate.toFixed(2)+'%';
     if(oldPrime!==undefined&&oldPrime!==window.primeRate)updateAllPrimeLoans();
+  });
+  onSnapshot(collection(db,'importLog'),snap=>{
+    importLog=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderImportTracker();
   });
   onSnapshot(collection(db,'loans'),snap=>{
     loans=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.balance||0)-(a.balance||0));
